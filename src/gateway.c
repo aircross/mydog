@@ -277,6 +277,14 @@ termination_handler(int s)
 
 /** @internal 
  * Registers all the signal handlers
+ * ______________________________________
+ *|  signal  |      handler        |
+ *| SIGCHLD  | sigchld_handler     |
+ *| SIGPIPE  | SIG_IGN             |
+ *| SIGTERM  | termination_handler |
+ *| SIGQUIT  | termination_handler |
+ *| SIGINT   | termination_handler |
+ *| -------------------------------------
  */
 static void
 init_signals(void)
@@ -474,7 +482,7 @@ int main(int argc, char **argv) {
 	s_config *config = config_get_config();
 	config_init();
 
-	parse_commandline(argc, argv);
+	parse_commandline(argc, argv);	//分析命令行参数
 
 	/* Initialize the config */
 	config_read(config->configfile);

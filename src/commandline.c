@@ -51,7 +51,7 @@ usage(void)
  */
 void parse_commandline(int argc, char **argv) {
     int c;
-	 int skiponrestart;
+	 int skiponrestart;		//wdctl restart时，是否使用原来的参数的标志位
 	 int i;
 
     s_config *config = config_get_config();
@@ -86,7 +86,7 @@ void parse_commandline(int argc, char **argv) {
 				break;
 
 			case 'f':
-				skiponrestart = 1;
+				skiponrestart = 1;			//自动重启时屏蔽该参数
 				config->daemon = 0;
 				break;
 
@@ -106,7 +106,7 @@ void parse_commandline(int argc, char **argv) {
 				break;
 
 			case 'x':
-				skiponrestart = 1;
+				skiponrestart = 1;		//自动重启时屏蔽该参数
 				if (optarg) {
 					restart_orig_pid = atoi(optarg);
 				}

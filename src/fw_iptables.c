@@ -84,7 +84,7 @@ iptables_do_command(const char *format, ...)
 
 	debug(LOG_DEBUG, "Executing command: %s", cmd);
 
-	rc = execute(cmd, fw_quiet);
+	rc = execute(cmd, fw_quiet);	// 调用exec执行一次shell命令
 
 	if (rc!=0) {
 		// If quiet, do not display the error
@@ -205,7 +205,8 @@ iptables_fw_set_authservers(void)
 
 }
 
-/** Initialize the firewall rules
+/**
+ * Initialize the firewall rules
 */
 	int
 iptables_fw_init(void)
