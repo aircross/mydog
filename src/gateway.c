@@ -362,7 +362,8 @@ main_loop(void)
 	/* If we don't have the Gateway IP address, get it. Can't fail. */
 	if (!config->gw_address) {
 		debug(LOG_DEBUG, "Finding IP address of %s", config->gw_interface);
-		if ((config->gw_address = get_iface_ip(config->gw_interface)) == NULL) {
+		if ((config->gw_address = get_iface_ip(config->gw_interface)) == NULL) {	/** Eclipse Debug时 不能获取root权限，此函数调用失败， Debug时用下行代替 */
+/**		if ((config->gw_address = safe_strdup("192.168.110.254")) == NULL) {			/** my wifidog.conf : gw_address = "192.168.110.254" gw_interface = "p3p1" */
 			debug(LOG_ERR, "Could not get IP address information of %s, exiting...", config->gw_interface);
 			exit(1);
 		}
@@ -382,7 +383,7 @@ main_loop(void)
 
 	/* Initializes the web server */
 	debug(LOG_NOTICE, "Creating web server on %s:%d", config->gw_address, config->gw_port);
-	if ((webserver = httpdCreate(config->gw_address, config->gw_port)) == NULL) {
+	if ((webserver = httpdCreate(config->gw_address, config->gw_port)) == NULL) {	/** 不以root运行调试，调用bind()返回失败 */
 		debug(LOG_ERR, "Could not create web server: %s", strerror(errno));
 		exit(1);
 	}

@@ -97,20 +97,17 @@ execute(const char *cmd_line, int quiet)
         return (WEXITSTATUS(status));
 }
 
-	struct in_addr *
+struct in_addr *
 wd_gethostbyname(const char *name)
 {
 	struct hostent *he;
 	struct in_addr *h_addr, *in_addr_temp;
 
 	/* XXX Calling function is reponsible for free() */
-
 	h_addr = safe_malloc(sizeof(struct in_addr));
-
 	LOCK_GHBN();
 
-	he = gethostbyname(name);
-
+	he 	 = gethostbyname(name);
 	if (he == NULL) {
 		free(h_addr);
 		UNLOCK_GHBN();

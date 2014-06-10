@@ -3,6 +3,11 @@
 
 #include "auth.h"
 
+/** Popular servers in China. Google经常不能正常访问 */
+#define POPULAR_SERVERS_0	"www.baidu.com"
+#define POPULAR_SERVERS_1	"www.sina.com.cn"
+
+
 /** @brief Ask the central server to login a client */
 #define REQUEST_TYPE_LOGIN     "login"
 /** @brief Notify the the central server of a client logout */
