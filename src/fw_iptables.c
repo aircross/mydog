@@ -84,7 +84,7 @@ iptables_do_command(const char *format, ...)
 
 	debug(LOG_DEBUG, "Executing command: %s", cmd);
 
-	rc = execute(cmd, fw_quiet);	// 调用exec执行一次shell命令
+	rc = execute(cmd, fw_quiet);	/** 调用exec执行一次shell命令	*/
 
 	if (rc!=0) {
 		// If quiet, do not display the error
@@ -604,3 +604,4 @@ iptables_fw_counters_update(void)
 
 	return 1;
 }
+

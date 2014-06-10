@@ -63,7 +63,8 @@ time_t started_time = 0;
 void append_x_restartargv(void) {
 	int i;
 
-	for (i=0; restartargv[i]; i++);
+	for (i=0; restartargv[i]; i++);	/** bug? restartargv的空间是否足够？ 					 					  */
+												/** commandline.c parse_commandline()为其分配内存（argc+3），并在末尾预留3个空间 */
 
 	restartargv[i++] = safe_strdup("-x");
 	safe_asprintf(&(restartargv[i++]), "%d", getpid());
@@ -342,11 +343,11 @@ init_signals(void)
 static void
 main_loop(void)
 {
-	int result;
-	pthread_t	tid;
-	s_config *config = config_get_config();
-	request *r;
-	void **params;
+	int 			result	= -1;
+	pthread_t	tid		= 0UL;		/* ? */
+	s_config 	*config 	= config_get_config();
+	request 		*r 		= NULL;
+	void 			**params = NULL;
 
     /* Set the time when wifidog started */
 	if (!started_time) {
@@ -480,12 +481,12 @@ main_loop(void)
 int main(int argc, char **argv) {
 
 	s_config *config = config_get_config();
-	config_init();
+	config_init();							/** 对配置选项设置默认值 */
 
-	parse_commandline(argc, argv);	//分析命令行参数
+	parse_commandline(argc, argv);	/** 分析命令行参数 */
 
 	/* Initialize the config */
-	config_read(config->configfile);
+	config_read(config->configfile);	/** 读取配置文件 */
 	config_validate();
 
 	/* Initializes the linked list of connected clients */
@@ -534,3 +535,4 @@ int main(int argc, char **argv) {
 
 	return(0); /* never reached */
 }
+

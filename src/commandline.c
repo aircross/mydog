@@ -51,19 +51,19 @@ usage(void)
  */
 void parse_commandline(int argc, char **argv) {
     int c;
-	 int skiponrestart;		//wdctl restart时，是否使用原来的参数的标志位
+	 int skiponrestart;		/** wdctl restart时，是否使用原来的参数的标志位 0保留，非0不再使用 */
 	 int i;
 
     s_config *config = config_get_config();
 
 	//MAGIC 3: Our own -x, the pid, and NULL :
-	restartargv = safe_malloc((argc + 3) * sizeof(char*));
+	restartargv = safe_malloc((argc + 3) * sizeof(char*));			/** commandline.c line 17 */
 	i=0;
 	restartargv[i++] = safe_strdup(argv[0]);
 
     while (-1 != (c = getopt(argc, argv, "c:hfd:sw:vx:i:"))) {
 
-		skiponrestart = 0;
+		skiponrestart = 0;		/** 是否在重启动的时候使用某参数的标志变量 */
 
 		switch(c) {
 
@@ -86,12 +86,12 @@ void parse_commandline(int argc, char **argv) {
 				break;
 
 			case 'f':
-				skiponrestart = 1;			//自动重启时屏蔽该参数
+				skiponrestart = 1;		/** 在重启动的时候 不会再使用"f"参数 */
 				config->daemon = 0;
 				break;
 
 			case 'd':
-				if (optarg) {
+				if (optarg) {				/** 如果-d 8 ，-d -2 是怎样？ */
 					config->debuglevel = atoi(optarg);
 				}
 				break;
@@ -106,7 +106,7 @@ void parse_commandline(int argc, char **argv) {
 				break;
 
 			case 'x':
-				skiponrestart = 1;		//自动重启时屏蔽该参数
+				skiponrestart = 1;	/** 在重启动的时候 不会再使用"x"参数 */
 				if (optarg) {
 					restart_orig_pid = atoi(optarg);
 				}
@@ -145,11 +145,12 @@ void parse_commandline(int argc, char **argv) {
 	 * so we'll leave this job to gateway.c after forking is completed
 	 * so that the correct PID is assigned
 	 *
-	 * We add 3 nulls, and the first 2 will be overridden later
+	 * We add 3 nulls, and the first 2 will be overridden later---in main()
 	 */
 	restartargv[i++] = NULL;
 	restartargv[i++] = NULL;
 	restartargv[i++] = NULL;
 
 }
+
 
