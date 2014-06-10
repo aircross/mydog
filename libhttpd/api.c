@@ -50,6 +50,7 @@
 #  include <varargs.h>
 #endif
 
+#define LISTEN_BACKLOG	1024
 
 char *httpdUrlEncode(str)
 	const char	*str;
@@ -285,12 +286,14 @@ httpd *httpdCreate(host, port)
 	addr.sin_port = htons((u_short)new->port);
 	if (bind(sock,(struct sockaddr *)&addr,sizeof(addr)) <0)
 	{
-/**	printf("bind() failed: %s", strerror(errno));	/** Eclipse调试时，bind()失败，打印bind()失败信息 */
+/**	printf("bind() failed: %s", strerror(errno));	/** Eclipse调试时，bind()失败，打印bind()失败信息
+ * 	main_loop() 调用 httpdCreate（）后会对 此处返回的errno进行打印
+ * */
 		close(sock);
 		free(new);
 		return(NULL);
 	}
-	listen(sock, 1024);		/** 原生WiFiDog 此处的值很小，忘记具体多少了，太小容易造成并发请求认证数量太多导致WiFiDog崩溃 */
+	listen(sock, LISTEN_BACKLOG);		/** 原生WiFiDog 此处的值很小，忘记具体多少了，太小容易造成并发请求认证数量太多导致WiFiDog崩溃 */
 	new->startTime = time(NULL);
 	return(new);
 }
