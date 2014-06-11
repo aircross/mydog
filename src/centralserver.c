@@ -37,7 +37,13 @@ extern pthread_mutex_t	config_mutex;
 @param outgoing Current counter of the client's total outgoing traffic, in bytes 
 */
 t_authcode
-auth_server_request(t_authresponse *authresponse, const char *request_type, const char *ip, const char *mac, const char *token, unsigned long long int incoming, unsigned long long int outgoing)
+auth_server_request(	t_authresponse *authresponse,
+							const char *request_type,
+							const char *ip,
+							const char *mac,
+							const char *token,
+							unsigned long long int incoming,
+							unsigned long long int outgoing)
 {
 	int sockfd;
 	ssize_t	numbytes;
@@ -55,7 +61,8 @@ auth_server_request(t_authresponse *authresponse, const char *request_type, cons
 	authresponse->authcode = AUTH_ERROR;
 	
 	sockfd = connect_auth_server();
-	if (sockfd == -1) {
+	if (sockfd == -1)
+	{
 		/* Could not connect to any auth server */
 		return (AUTH_ERROR);
 	}
@@ -65,7 +72,7 @@ auth_server_request(t_authresponse *authresponse, const char *request_type, cons
 	 * everywhere.
 	 */
 	memset(buf, 0, sizeof(buf));
-        safe_token=httpdUrlEncode(token);
+	safe_token = httpdUrlEncode(token);
 	snprintf(buf, (sizeof(buf) - 1),
 		"GET %s%sstage=%s&ip=%s&mac=%s&token=%s&incoming=%llu&outgoing=%llu&gw_id=%s HTTP/1.0\r\n"
 		"User-Agent: WiFiDog %s\r\n"
@@ -84,7 +91,7 @@ auth_server_request(t_authresponse *authresponse, const char *request_type, cons
 		auth_server->authserv_hostname
 	);
 
-        free(safe_token);
+	free(safe_token);
 
 	debug(LOG_DEBUG, "Sending HTTP request to auth server: [%s]\n", buf);
 	send(sockfd, buf, strlen(buf), 0);
@@ -101,31 +108,37 @@ auth_server_request(t_authresponse *authresponse, const char *request_type, cons
 
 		nfds = select(nfds, &readfds, NULL, NULL, &timeout);
 
-		if (nfds > 0) {
+		if (nfds > 0)
+		{
 			/** We don't have to use FD_ISSET() because there
 			 *  was only one fd. */
 			numbytes = read(sockfd, buf + totalbytes, MAX_BUF - (totalbytes + 1));
-			if (numbytes < 0) {
+			if (numbytes < 0)
+			{
 				debug(LOG_ERR, "An error occurred while reading from auth server: %s", strerror(errno));
 				/* FIXME */
 				close(sockfd);
 				return (AUTH_ERROR);
 			}
-			else if (numbytes == 0) {
+			else if (numbytes == 0)
+			{
 				done = 1;
 			}
-			else {
+			else
+			{
 				totalbytes += numbytes;
 				debug(LOG_DEBUG, "Read %d bytes, total now %d", numbytes, totalbytes);
 			}
 		}
-		else if (nfds == 0) {
+		else if (nfds == 0)
+		{
 			debug(LOG_ERR, "Timed out reading data via select() from auth server");
 			/* FIXME */
 			close(sockfd);
 			return (AUTH_ERROR);
 		}
-		else if (nfds < 0) {
+		else if (nfds < 0)
+		{
 			debug(LOG_ERR, "Error reading data via select() from auth server: %s", strerror(errno));
 			/* FIXME */
 			close(sockfd);
@@ -138,16 +151,21 @@ auth_server_request(t_authresponse *authresponse, const char *request_type, cons
 	buf[totalbytes] = '\0';
 	debug(LOG_DEBUG, "HTTP Response from Server: [%s]", buf);
 	
-	if ((tmp = strstr(buf, "Auth: "))) {
-		if (sscanf(tmp, "Auth: %d", (int *)&authresponse->authcode) == 1) {
+	if ((tmp = strstr(buf, "Auth: ")))
+	{
+		if (sscanf(tmp, "Auth: %d", (int *)&authresponse->authcode) == 1)
+		{
 			debug(LOG_INFO, "Auth server returned authentication code %d", authresponse->authcode);
 			return(authresponse->authcode);
-		} else {
+		}
+		else
+		{
 			debug(LOG_WARNING, "Auth server did not return expected authentication code");
 			return(AUTH_ERROR);
 		}
 	}
-	else {
+	else
+	{
 		return(AUTH_ERROR);
 	}
 
@@ -157,7 +175,8 @@ auth_server_request(t_authresponse *authresponse, const char *request_type, cons
 
 /* Tries really hard to connect to an auth server. Returns a file descriptor, -1 on error
  */
-int connect_auth_server() {
+int connect_auth_server()
+{
 	int sockfd;
 
 	LOCK_CONFIG();

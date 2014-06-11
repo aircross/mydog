@@ -56,7 +56,7 @@ thread_client_timeout_check(const void *arg)
 	
 		debug(LOG_DEBUG, "Running fw_counter()");
 	
-		fw_sync_with_authserver();
+		fw_sync_with_authserver();		/** 同步认证服务器和路由器之间的client信息 */
 	}
 }
 

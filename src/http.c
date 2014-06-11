@@ -265,27 +265,31 @@ http_callback_auth(httpd *webserver, request *r)
 
 void send_http_page(request *r, const char *title, const char* message)
 {
-    s_config	*config = config_get_config();
-    char *buffer;
-    struct stat stat_info;
-    int fd;
-    ssize_t written;
+	char 			*buffer;
+	int 			fd;
+	ssize_t 		written;
+	struct stat stat_info;
+	s_config		*config = config_get_config();
 
-    fd=open(config->htmlmsgfile, O_RDONLY);
-    if (fd==-1) {
+
+    fd = open(config->htmlmsgfile, O_RDONLY);
+    if (fd==-1)
+    {
         debug(LOG_CRIT, "Failed to open HTML message file %s: %s", config->htmlmsgfile, strerror(errno));
         return;
     }
 
-    if (fstat(fd, &stat_info)==-1) {
+    if (fstat(fd, &stat_info)==-1)
+    {
         debug(LOG_CRIT, "Failed to stat HTML message file: %s", strerror(errno));
         close(fd);
         return;
     }
 
-    buffer=(char*)safe_malloc(stat_info.st_size+1);
-    written=read(fd, buffer, stat_info.st_size);
-    if (written==-1) {
+    buffer 	= (char*)safe_malloc(stat_info.st_size+1);
+    written	= read(fd, buffer, stat_info.st_size);
+    if (written == -1)
+    {
         debug(LOG_CRIT, "Failed to read HTML message file: %s", strerror(errno));
         free(buffer);
         close(fd);
@@ -293,7 +297,7 @@ void send_http_page(request *r, const char *title, const char* message)
     }
     close(fd);
 
-    buffer[written]=0;
+    buffer[written] = 0;
     httpdAddVariable(r, "title", title);
     httpdAddVariable(r, "message", message);
     httpdAddVariable(r, "nodeID", config->gw_id);

@@ -444,16 +444,20 @@ iptables_fw_destroy_mention(
 	safe_asprintf(&command, "iptables -t %s -L %s -n --line-numbers -v", table, chain);
 	iptables_insert_gateway_id(&command);
 
-	if ((p = popen(command, "r"))) {
+	if ((p = popen(command, "r")))
+	{
 		/* Skip first 2 lines */
 		while (!feof(p) && fgetc(p) != '\n');
 		while (!feof(p) && fgetc(p) != '\n');
 		/* Loop over entries */
-		while (fgets(line, sizeof(line), p)) {
+		while (fgets(line, sizeof(line), p))
+		{
 			/* Look for victim */
-			if (strstr(line, victim)) {
+			if (strstr(line, victim))
+			{
 				/* Found victim - Get the rule number into rulenum*/
-				if (sscanf(line, "%9[0-9]", rulenum) == 1) {
+				if (sscanf(line, "%9[0-9]", rulenum) == 1)
+				{
 					/* Delete the rule: */
 					debug(LOG_DEBUG, "Deleting rule %s from %s.%s because it mentions %s", rulenum, table, chain, victim);
 					safe_asprintf(&command2, "-t %s -D %s %s", table, chain, rulenum);
@@ -471,7 +475,8 @@ iptables_fw_destroy_mention(
 	free(command);
 	free(victim);
 
-	if (deleted) {
+	if (deleted)
+	{
 		/* Recurse just in case there are more in the same table+chain */
 		iptables_fw_destroy_mention(table, chain, mention);
 	}
@@ -531,24 +536,31 @@ iptables_fw_counters_update(void)
 		;
 	while (('\n' != fgetc(output)) && !feof(output))
 		;
-	while (output && !(feof(output))) {
+	while (output && !(feof(output)))
+	{
 		rc = fscanf(output, "%*s %llu %*s %*s %*s %*s %*s %15[0-9.] %*s %*s %*s %*s %*s %*s", &counter, ip);
 		//rc = fscanf(output, "%*s %llu %*s %*s %*s %*s %*s %15[0-9.] %*s %*s %*s %*s %*s 0x%*u", &counter, ip);
-		if (2 == rc && EOF != rc) {
+		if (2 == rc && EOF != rc)
+		{
 			/* Sanity*/
-			if (!inet_aton(ip, &tempaddr)) {
+			if (!inet_aton(ip, &tempaddr))
+			{
 				debug(LOG_WARNING, "I was supposed to read an IP address but instead got [%s] - ignoring it", ip);
 				continue;
 			}
 			debug(LOG_DEBUG, "Read outgoing traffic for %s: Bytes=%llu", ip, counter);
 			LOCK_CLIENT_LIST();
-			if ((p1 = client_list_find_by_ip(ip))) {
-				if ((p1->counters.outgoing - p1->counters.outgoing_history) < counter) {
+			if ((p1 = client_list_find_by_ip(ip)))
+			{
+				if ((p1->counters.outgoing - p1->counters.outgoing_history) < counter)
+				{
 					p1->counters.outgoing = p1->counters.outgoing_history + counter;
 					p1->counters.last_updated = time(NULL);
 					debug(LOG_DEBUG, "%s - Updated counter.outgoing to %llu bytes.  Updated last_updated to %d", ip, counter, p1->counters.last_updated);
 				}
-			} else {
+			}
+			else
+			{
 				debug(LOG_ERR, "iptables_fw_counters_update(): Could not find %s in client list, this should not happen unless if the gateway crashed", ip);
 				debug(LOG_ERR, "Preventively deleting firewall rules for %s in table %s", ip, TABLE_WIFIDOG_OUTGOING);
 				iptables_fw_destroy_mention("mangle", TABLE_WIFIDOG_OUTGOING, ip);
@@ -575,22 +587,29 @@ iptables_fw_counters_update(void)
 		;
 	while (('\n' != fgetc(output)) && !feof(output))
 		;
-	while (output && !(feof(output))) {
+	while (output && !(feof(output)))
+	{
 		rc = fscanf(output, "%*s %llu %*s %*s %*s %*s %*s %*s %15[0-9.]", &counter, ip);
-		if (2 == rc && EOF != rc) {
+		if (2 == rc && EOF != rc)
+		{
 			/* Sanity*/
-			if (!inet_aton(ip, &tempaddr)) {
+			if (!inet_aton(ip, &tempaddr))
+			{
 				debug(LOG_WARNING, "I was supposed to read an IP address but instead got [%s] - ignoring it", ip);
 				continue;
 			}
 			debug(LOG_DEBUG, "Read incoming traffic for %s: Bytes=%llu", ip, counter);
 			LOCK_CLIENT_LIST();
-			if ((p1 = client_list_find_by_ip(ip))) {
-				if ((p1->counters.incoming - p1->counters.incoming_history) < counter) {
+			if ((p1 = client_list_find_by_ip(ip)))
+			{
+				if ((p1->counters.incoming - p1->counters.incoming_history) < counter)
+				{
 					p1->counters.incoming = p1->counters.incoming_history + counter;
 					debug(LOG_DEBUG, "%s - Updated counter.incoming to %llu bytes", ip, counter);
 				}
-			} else {
+			}
+			else
+			{
 				debug(LOG_ERR, "iptables_fw_counters_update(): Could not find %s in client list, this should not happen unless if the gateway crashed", ip);
 				debug(LOG_ERR, "Preventively deleting firewall rules for %s in table %s", ip, TABLE_WIFIDOG_OUTGOING);
 				iptables_fw_destroy_mention("mangle", TABLE_WIFIDOG_OUTGOING, ip);

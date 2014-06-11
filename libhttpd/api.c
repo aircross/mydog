@@ -53,23 +53,25 @@
 #define LISTEN_BACKLOG	1024
 
 char *httpdUrlEncode(str)
-	const char	*str;
+			const char	*str;
 {
-        char    *new,
-                *cp;
+	char    *new,
+	*cp;
 
-        new = (char *)_httpd_escape(str);
+	new = (char *)_httpd_escape(str);
 	if (new == NULL)
 	{
 		return(NULL);
 	}
-        cp = new;
-        while(*cp)
-        {
-                if (*cp == ' ')
-                        *cp = '+';
-                cp++;
-        }
+	cp = new;
+	while(*cp)
+	{
+		if (*cp == ' ')
+		{
+			*cp = '+';
+		}
+		cp++;
+	}
 	return(new);
 }
 
@@ -314,12 +316,12 @@ request *httpdGetConnection(server, timeout)
 	httpd	*server;
 	struct	timeval *timeout;
 {
-	int		result;
+	int			result;
+	char			*ipaddr;
 	fd_set		fds;
-	struct  	sockaddr_in     addr;
-	socklen_t	addrLen;
-	char		*ipaddr;
 	request		*r;
+	socklen_t	addrLen;
+	struct sockaddr_in	addr;
 
 	FD_ZERO(&fds);
 	FD_SET(server->serverSock, &fds);
@@ -332,11 +334,13 @@ request *httpdGetConnection(server, timeout)
 			server->lastError = -1;
 			return(NULL);
 		}
+
 		if (timeout != 0 && result == 0)
 		{
-			return(NULL);
-			server->lastError = 0;
+			return(NULL);					/** !!! 这是	 */
+			server->lastError = 0;		/** 什么情况?! */
 		}
+
 		if (result > 0)
 		{
 			break;
@@ -344,7 +348,8 @@ request *httpdGetConnection(server, timeout)
 	}
 	/* Allocate request struct */
 	r = (request *)malloc(sizeof(request));
-	if (r == NULL) {
+	if (r == NULL)
+	{
 		server->lastError = -3;
 		return(NULL);
 	}
@@ -352,14 +357,18 @@ request *httpdGetConnection(server, timeout)
 	/* Get on with it */
 	bzero(&addr, sizeof(addr));
 	addrLen = sizeof(addr);
-	r->clientSock = accept(server->serverSock,(struct sockaddr *)&addr,
-		&addrLen);
+	r->clientSock = accept(server->serverSock,(struct sockaddr *)&addr, &addrLen);
 	ipaddr = inet_ntoa(addr.sin_addr);
-	if (ipaddr) {
+	if (ipaddr)
+	{
 		strncpy(r->clientAddr, ipaddr, HTTP_IP_ADDR_LEN);
-                r->clientAddr[HTTP_IP_ADDR_LEN-1]=0;
-        } else
+		r->clientAddr[HTTP_IP_ADDR_LEN-1]=0;
+	}
+	else
+	{
 		*r->clientAddr = 0;
+	}
+
 	r->readBufRemain = 0;
 	r->readBufPtr = NULL;
 
@@ -368,8 +377,7 @@ request *httpdGetConnection(server, timeout)
 	*/
 	if (server->defaultAcl)
 	{
-		if (httpdCheckAcl(server, r, server->defaultAcl)
-				== HTTP_ACL_DENY)
+		if (httpdCheckAcl(server, r, server->defaultAcl) == HTTP_ACL_DENY)
 		{
 			httpdEndRequest(r);
 			server->lastError = 2;

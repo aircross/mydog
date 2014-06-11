@@ -36,8 +36,8 @@ extern time_t started_time;
 void
 thread_ping(void *arg)
 {
-	pthread_cond_t		cond = PTHREAD_COND_INITIALIZER;
-	pthread_mutex_t		cond_mutex = PTHREAD_MUTEX_INITIALIZER;
+	pthread_cond_t		cond			 = PTHREAD_COND_INITIALIZER;
+	pthread_mutex_t	cond_mutex	 = PTHREAD_MUTEX_INITIALIZER;
 	struct	timespec	timeout;
 	
 	while (1) {
@@ -66,13 +66,13 @@ thread_ping(void *arg)
 static void
 ping(void)
 {
-        ssize_t			numbytes;
-        size_t	        	totalbytes;
-	int			sockfd, nfds, done;
-	char			request[MAX_BUF];
-	fd_set			readfds;
+	ssize_t	numbytes;
+	size_t	totalbytes;
+	int		sockfd, nfds, done;
+	char		request[MAX_BUF];
+	fd_set	readfds;
+	FILE 		*fh;
 	struct timeval		timeout;
-	FILE * fh;
 	unsigned long int sys_uptime  = 0;
 	unsigned int      sys_memfree = 0;
 	float             sys_load    = 0;
@@ -103,20 +103,25 @@ ping(void)
 
 		fclose(fh);
 	}
-	if ((fh = fopen("/proc/meminfo", "r"))) {
-		while (!feof(fh)) {
-			if (fscanf(fh, "MemFree: %u", &sys_memfree) == 0) {
+	if ((fh = fopen("/proc/meminfo", "r")))
+	{
+		while (!feof(fh))
+		{
+			if (fscanf(fh, "MemFree: %u", &sys_memfree) == 0)
+			{
 				/* Not on this line */
 				while (!feof(fh) && fgetc(fh) != '\n');
 			}
-			else {
+			else
+			{
 				/* Found it */
 				break;
 			}
 		}
 		fclose(fh);
 	}
-	if ((fh = fopen("/proc/loadavg", "r"))) {
+	if ((fh = fopen("/proc/loadavg", "r")))
+	{
 		if(fscanf(fh, "%f", &sys_load) != 1)
 			debug(LOG_CRIT, "Failed to read loadavg");
 
@@ -158,31 +163,37 @@ ping(void)
 
 		nfds = select(nfds, &readfds, NULL, NULL, &timeout);
 
-		if (nfds > 0) {
+		if (nfds > 0)
+		{
 			/** We don't have to use FD_ISSET() because there
 			 *  was only one fd. */
 			numbytes = read(sockfd, request + totalbytes, MAX_BUF - (totalbytes + 1));
-			if (numbytes < 0) {
+			if (numbytes < 0)
+			{
 				debug(LOG_ERR, "An error occurred while reading from auth server: %s", strerror(errno));
 				/* FIXME */
 				close(sockfd);
 				return;
 			}
-			else if (numbytes == 0) {
+			else if (numbytes == 0)
+			{
 				done = 1;
 			}
-			else {
+			else
+			{
 				totalbytes += numbytes;
 				debug(LOG_DEBUG, "Read %d bytes, total now %d", numbytes, totalbytes);
 			}
 		}
-		else if (nfds == 0) {
+		else if (nfds == 0)
+		{
 			debug(LOG_ERR, "Timed out reading data via select() from auth server");
 			/* FIXME */
 			close(sockfd);
 			return;
 		}
-		else if (nfds < 0) {
+		else if (nfds < 0)
+		{
 			debug(LOG_ERR, "Error reading data via select() from auth server: %s", strerror(errno));
 			/* FIXME */
 			close(sockfd);

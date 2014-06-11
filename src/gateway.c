@@ -435,11 +435,13 @@ main_loop(void)
 
 		/* We can't convert this to a switch because there might be
 		 * values that are not -1, 0 or 1. */
-		if (webserver->lastError == -1) {
+		if (webserver->lastError == -1)
+		{
 			/* Interrupted system call */
 			continue; /* restart loop */
 		}
-		else if (webserver->lastError < -1) {
+		else if (webserver->lastError < -1)
+		{
 			/*
 			 * FIXME
 			 * An error occurred - should we abort?
@@ -448,7 +450,8 @@ main_loop(void)
 			debug(LOG_ERR, "FATAL: httpdGetConnection returned unexpected value %d, exiting.", webserver->lastError);
 			termination_handler(0);
 		}
-		else if (r != NULL) {
+		else if (r != NULL)
+		{
 			/*
 			 * We got a connection
 			 *
@@ -462,13 +465,15 @@ main_loop(void)
 			*(params + 1) = r;
 
 			result = pthread_create(&tid, NULL, (void *)thread_httpd, (void *)params);
-			if (result != 0) {
+			if (result != 0)
+			{
 				debug(LOG_ERR, "FATAL: Failed to create a new thread (httpd) - exiting");
 				termination_handler(0);
 			}
 			pthread_detach(tid);
 		}
-		else {
+		else
+		{
 			/* webserver->lastError should be 2 */
 			/* XXX We failed an ACL.... No handling because
 			 * we don't set any... */

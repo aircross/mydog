@@ -48,17 +48,18 @@ client_list_init(void)
  * @param token Token
  * @return Pointer to the client we just created
  */
-t_client         *
+t_client*
 client_list_append(const char *ip, const char *mac, const char *token)
 {
-    t_client         *curclient, *prevclient;
+    t_client *curclient, *prevclient;
 
     prevclient = NULL;
     curclient = firstclient;
 
-    while (curclient != NULL) {
+    while (curclient != NULL)
+    {
         prevclient = curclient;
-        curclient = curclient->next;
+        curclient  = curclient->next;
     }
 
     curclient = safe_malloc(sizeof(t_client));
