@@ -391,18 +391,18 @@ request *httpdGetConnection(server, timeout)
 
 int httpdReadRequest(httpd *server, request *r)
 {
-	static	char	buf[HTTP_MAX_LEN];
 	int	count,
-		inHeaders;
-	char	*cp, *cp2;
+			inHeaders;
+	char	*cp,
+			*cp2;
 	int	_httpd_decode();
+	static char	buf[HTTP_MAX_LEN];
 
 
 	/*
 	** Setup for a standard response
 	*/
-	strcpy(r->response.headers,
-		"Server: Hughes Technologies Embedded Server\n"); 
+	strcpy(r->response.headers, "Server: Hughes Technologies Embedded Server\n");
 	strcpy(r->response.contentType, "text/html");
 	strcpy(r->response.response,"200 Output Follows\n");
 	r->response.headersSent = 0;

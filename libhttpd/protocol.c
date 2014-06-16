@@ -138,7 +138,6 @@ int _httpd_readBuf(request *r, char *destBuf, int len)
 		*dst;
 	int	count;
 	
-
 	count = 0;
 	dst = destBuf;
 	while(count < len)

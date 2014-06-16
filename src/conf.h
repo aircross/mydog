@@ -19,29 +19,33 @@
 	#define DEFAULT_CONFIGFILE SYSCONFDIR"/wifidog.conf"
 	#define DEFAULT_HTMLMSGFILE SYSCONFDIR"/wifidog-msg.html"
 #endif	
-#define DEFAULT_DAEMON 1
-#define DEFAULT_DEBUGLEVEL LOG_INFO
-#define DEFAULT_HTTPDMAXCONN 100
-#define DEFAULT_GATEWAYID NULL
-#define DEFAULT_GATEWAYPORT 2060
-#define DEFAULT_HTTPDNAME "WiFiDog"
-#define DEFAULT_CLIENTTIMEOUT 5
-#define DEFAULT_CHECKINTERVAL 60
-#define DEFAULT_LOG_SYSLOG 0
-#define DEFAULT_SYSLOG_FACILITY LOG_DAEMON
-#define DEFAULT_WDCTL_SOCK "/tmp/wdctl.sock"
-#define DEFAULT_INTERNAL_SOCK "/tmp/wifidog.sock"
-#define DEFAULT_AUTHSERVPORT 80
-#define DEFAULT_AUTHSERVSSLPORT 443
+
+#define CONFIGFILE_FROM_SERVER 	"/tmp/dog.conf"			/** 从服务器获得配置文件的存放位置		*/
+#define CONFIGFILE_URL 				"localhost/dog.conf"	   /** 获取配置文件的URL				 	*/
+
+#define DEFAULT_DAEMON 				1
+#define DEFAULT_DEBUGLEVEL 		LOG_INFO
+#define DEFAULT_HTTPDMAXCONN 		100
+#define DEFAULT_GATEWAYID 			"chengdu_test"		/** 默认的NODE ID */
+#define DEFAULT_GATEWAYPORT 		2060
+#define DEFAULT_HTTPDNAME 			"WiFiDog"
+#define DEFAULT_CLIENTTIMEOUT 	12						/** 根据需求 			*/
+#define DEFAULT_CHECKINTERVAL 	600					/** 修改了这两个选项 */
+#define DEFAULT_LOG_SYSLOG 		0
+#define DEFAULT_SYSLOG_FACILITY 	LOG_DAEMON
+#define DEFAULT_WDCTL_SOCK 		"/tmp/wdctl.sock"
+#define DEFAULT_INTERNAL_SOCK 	"/tmp/wifidog.sock"
+#define DEFAULT_AUTHSERVPORT 		80
+#define DEFAULT_AUTHSERVSSLPORT 	443
 /** Note that DEFAULT_AUTHSERVSSLAVAILABLE must be 0 or 1, even if the config file syntax is yes or no */
 #define DEFAULT_AUTHSERVSSLAVAILABLE 0
 /** Note:  The path must be prefixed by /, and must be suffixed /.  Put / for the server root.*/
-#define DEFAULT_AUTHSERVPATH "/wifidog/"
-#define DEFAULT_AUTHSERVLOGINPATHFRAGMENT "login/?"
-#define DEFAULT_AUTHSERVPORTALPATHFRAGMENT "portal/?"
-#define DEFAULT_AUTHSERVMSGPATHFRAGMENT "gw_message.php?"
-#define DEFAULT_AUTHSERVPINGPATHFRAGMENT "ping/?"
-#define DEFAULT_AUTHSERVAUTHPATHFRAGMENT "auth/?"
+#define DEFAULT_AUTHSERVPATH 						"/wifidog/"
+#define DEFAULT_AUTHSERVLOGINPATHFRAGMENT 	"login/?"
+#define DEFAULT_AUTHSERVPORTALPATHFRAGMENT 	"portal/?"
+#define DEFAULT_AUTHSERVMSGPATHFRAGMENT 		"gw_message.php?"
+#define DEFAULT_AUTHSERVPINGPATHFRAGMENT 		"ping/?"
+#define DEFAULT_AUTHSERVAUTHPATHFRAGMENT 		"auth/?"
 /*@}*/ 
 
 /**
@@ -167,6 +171,11 @@ void mark_auth_server_bad(t_auth_serv *);
 t_firewall_rule *get_ruleset(const char *);
 
 void parse_trusted_mac_list(const char *);
+
+/**
+ * 从服务器下载配置文件
+ */
+int get_config_from_server(const char* url, const char* save_path);
 
 #define LOCK_CONFIG() do { \
 	debug(LOG_DEBUG, "Locking config"); \

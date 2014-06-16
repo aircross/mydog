@@ -6,6 +6,7 @@
 #include <syslog.h>
 
 #include <pthread.h>
+#include <netdb.h>
 
 #include <string.h>
 #include <ctype.h>
@@ -136,29 +137,29 @@ config_init(void)
 {
 	debug(LOG_DEBUG, "Setting default config parameters");
 	strncpy(config.configfile, DEFAULT_CONFIGFILE, sizeof(config.configfile));
-	config.htmlmsgfile = safe_strdup(DEFAULT_HTMLMSGFILE);
-	config.debuglevel = DEFAULT_DEBUGLEVEL;
-	config.httpdmaxconn = DEFAULT_HTTPDMAXCONN;
-	config.external_interface = NULL;
-	config.gw_id = DEFAULT_GATEWAYID;
-	config.gw_interface = NULL;
-	config.gw_address = NULL;
-	config.gw_port = DEFAULT_GATEWAYPORT;
-	config.auth_servers = NULL;
-	config.httpdname = NULL;
-	config.httpdrealm = DEFAULT_HTTPDNAME;
-	config.httpdusername = NULL;
-	config.httpdpassword = NULL;
-	config.clienttimeout = DEFAULT_CLIENTTIMEOUT;
-	config.checkinterval = DEFAULT_CHECKINTERVAL;
-	config.syslog_facility = DEFAULT_SYSLOG_FACILITY;
-	config.daemon = -1;
-	config.log_syslog = DEFAULT_LOG_SYSLOG;
-	config.wdctl_sock = safe_strdup(DEFAULT_WDCTL_SOCK);
-	config.internal_sock = safe_strdup(DEFAULT_INTERNAL_SOCK);
-	config.rulesets = NULL;
-	config.trustedmaclist = NULL;
-	config.proxy_port = 0;
+	config.htmlmsgfile 			= safe_strdup(DEFAULT_HTMLMSGFILE);
+	config.debuglevel 			= DEFAULT_DEBUGLEVEL;
+	config.httpdmaxconn 			= DEFAULT_HTTPDMAXCONN;
+	config.external_interface 	= NULL;
+	config.gw_id 					= DEFAULT_GATEWAYID;
+	config.gw_interface 			= NULL;
+	config.gw_address 			= NULL;
+	config.gw_port 				= DEFAULT_GATEWAYPORT;
+	config.auth_servers 			= NULL;
+	config.httpdname 				= NULL;
+	config.httpdrealm 			= DEFAULT_HTTPDNAME;
+	config.httpdusername 		= NULL;
+	config.httpdpassword			= NULL;
+	config.clienttimeout 		= DEFAULT_CLIENTTIMEOUT;
+	config.checkinterval 		= DEFAULT_CHECKINTERVAL;
+	config.syslog_facility 		= DEFAULT_SYSLOG_FACILITY;
+	config.daemon 					= -1;
+	config.log_syslog 			= DEFAULT_LOG_SYSLOG;
+	config.wdctl_sock 			= safe_strdup(DEFAULT_WDCTL_SOCK);
+	config.internal_sock 		= safe_strdup(DEFAULT_INTERNAL_SOCK);
+	config.rulesets 				= NULL;
+	config.trustedmaclist 		= NULL;
+	config.proxy_port 			= 0;
 }
 
 /**
@@ -193,7 +194,7 @@ Parses auth server information
 static void
 parse_auth_server(FILE *file, const char *filename, int *linenum)
 {
-	char		*host = NULL,
+	char	*host = NULL,
 			*path = NULL,
 			*loginscriptpathfragment = NULL,
 			*portalscriptpathfragment = NULL,
@@ -203,7 +204,7 @@ parse_auth_server(FILE *file, const char *filename, int *linenum)
 			line[MAX_BUF],
 			*p1,
 			*p2;
-	int		http_port,
+	int	http_port,
 			ssl_port,
 			ssl_available,
 			opcode;
@@ -212,13 +213,13 @@ parse_auth_server(FILE *file, const char *filename, int *linenum)
 
 	/* Defaults */
 	path = safe_strdup(DEFAULT_AUTHSERVPATH);
-	loginscriptpathfragment = safe_strdup(DEFAULT_AUTHSERVLOGINPATHFRAGMENT);
-	portalscriptpathfragment = safe_strdup(DEFAULT_AUTHSERVPORTALPATHFRAGMENT);
-	msgscriptpathfragment = safe_strdup(DEFAULT_AUTHSERVMSGPATHFRAGMENT);
-	pingscriptpathfragment = safe_strdup(DEFAULT_AUTHSERVPINGPATHFRAGMENT);
-	authscriptpathfragment = safe_strdup(DEFAULT_AUTHSERVAUTHPATHFRAGMENT);
+	loginscriptpathfragment 	= safe_strdup(DEFAULT_AUTHSERVLOGINPATHFRAGMENT);
+	portalscriptpathfragment 	= safe_strdup(DEFAULT_AUTHSERVPORTALPATHFRAGMENT);
+	msgscriptpathfragment 		= safe_strdup(DEFAULT_AUTHSERVMSGPATHFRAGMENT);
+	pingscriptpathfragment 		= safe_strdup(DEFAULT_AUTHSERVPINGPATHFRAGMENT);
+	authscriptpathfragment 		= safe_strdup(DEFAULT_AUTHSERVAUTHPATHFRAGMENT);
 	http_port = DEFAULT_AUTHSERVPORT;
-	ssl_port = DEFAULT_AUTHSERVSSLPORT;
+	ssl_port	 = DEFAULT_AUTHSERVSSLPORT;
 	ssl_available = DEFAULT_AUTHSERVSSLAVAILABLE;
 
 
@@ -677,8 +678,7 @@ config_read(const char *filename)
 					sscanf(p1, "%d", &config.gw_port);
 					break;
 				case oAuthServer:
-					parse_auth_server(fd, filename,
-							&linenum);
+					parse_auth_server(fd, filename, &linenum);
 					break;
 				case oFirewallRuleSet:
 					parse_firewall_ruleset(p1, fd, filename, &linenum);
@@ -862,3 +862,220 @@ mark_auth_server_bad(t_auth_serv *bad_server)
 	}
 
 }
+
+
+
+
+/**
+ * 从服务器下载配置文件
+ * 默认： url = CONFIGFILE_URL
+ *      save_path = CONFIGFILE_FROM_SERVER
+ */
+int get_config_from_server(const char* url, const char* save_path)
+{
+	char *purl = safe_strdup(url);
+	char *p1 = purl;
+	char *hostname;
+	struct in_addr *h_addr;
+
+	if ( NULL != (p1 = strstr(purl, "http://")) )	/** 略过“http://” */
+	{
+		p1 += 7;
+	}
+
+	if ( NULL != (p1 = strstr(purl, '/')) )		/**  */
+	{
+		*p1 = '\0';
+	}
+
+	h_addr = get_config_server(hostname);
+
+	/*
+	 * <此处添加下载文件的相关代码>
+	 */
+
+	free(hostname);
+	free(h_addr);
+
+	return 0;
+}
+
+
+
+
+static
+struct in_addr* get_config_server(const char *hostname)
+{
+	struct hostent *he;
+	struct in_addr *h_addr, *in_addr_temp;
+
+	h_addr = safe_malloc(sizeof(struct in_addr));
+	he = gethostbyname(hostname);
+	if( he == NULL )
+	{
+		free(h_addr);
+		debug(LOG_ERR, "Get config server IP failed.");
+		return NULL;
+	}
+
+	in_addr_temp = (struct in_addr *)he->h_addr_list[0];
+	h_addr->s_addr = in_addr_temp->s_addr;
+
+	return h_addr;
+}
+
+//static void
+//_get_config_from_server(void)
+//{
+//	ssize_t	numbytes;
+//	size_t	totalbytes;
+//	int		sockfd, nfds, done;
+//	char		request[MAX_BUF];
+//	fd_set	readfds;
+//	FILE 		*fh;
+//	struct timeval		timeout;
+//	unsigned long int sys_uptime  = 0;
+//	unsigned int      sys_memfree = 0;
+//	float             sys_load    = 0;
+//	t_auth_serv	*auth_server = NULL;
+//	auth_server = get_auth_server();
+//
+//	debug(LOG_DEBUG, "Entering ping()");
+//
+//	/*
+//	 * The ping thread does not really try to see if the auth server is actually
+//	 * working. Merely that there is a web server listening at the port. And that
+//	 * is done by connect_auth_server() internally.
+//	 */
+//	sockfd = connect_auth_server();
+//	if (sockfd == -1) {
+//		/*
+//		 * No auth servers for me to talk to
+//		 */
+//		return;
+//	}
+//
+//	/*
+//	 * Populate uptime, memfree and load
+//	 */
+//	if ((fh = fopen("/proc/uptime", "r"))) {
+//		if(fscanf(fh, "%lu", &sys_uptime) != 1)
+//			debug(LOG_CRIT, "Failed to read uptime");
+//
+//		fclose(fh);
+//	}
+//	if ((fh = fopen("/proc/meminfo", "r")))
+//	{
+//		while (!feof(fh))
+//		{
+//			if (fscanf(fh, "MemFree: %u", &sys_memfree) == 0)
+//			{
+//				/* Not on this line */
+//				while (!feof(fh) && fgetc(fh) != '\n');
+//			}
+//			else
+//			{
+//				/* Found it */
+//				break;
+//			}
+//		}
+//		fclose(fh);
+//	}
+//	if ((fh = fopen("/proc/loadavg", "r")))
+//	{
+//		if(fscanf(fh, "%f", &sys_load) != 1)
+//			debug(LOG_CRIT, "Failed to read loadavg");
+//
+//		fclose(fh);
+//	}
+//
+//	/*
+//	 * Prep & send request
+//	 */
+//	snprintf(request, sizeof(request) - 1,
+//			"GET %s%sgw_id=%s&sys_uptime=%lu&sys_memfree=%u&sys_load=%.2f&wifidog_uptime=%lu HTTP/1.0\r\n"
+//			"User-Agent: WiFiDog %s\r\n"
+//			"Host: %s\r\n"
+//			"\r\n",
+//			auth_server->authserv_path,
+//			auth_server->authserv_ping_script_path_fragment,
+//			config_get_config()->gw_id,
+//			sys_uptime,
+//			sys_memfree,
+//			sys_load,
+//			(long unsigned int)((long unsigned int)time(NULL) - (long unsigned int)started_time),
+//			VERSION,
+//			auth_server->authserv_hostname);
+//
+//	debug(LOG_DEBUG, "HTTP Request to Server: [%s]", request);
+//
+//	send(sockfd, request, strlen(request), 0);
+//
+//	debug(LOG_DEBUG, "Reading response");
+//
+//	numbytes = totalbytes = 0;
+//	done = 0;
+//	do {
+//		FD_ZERO(&readfds);
+//		FD_SET(sockfd, &readfds);
+//		timeout.tv_sec = 30; /* XXX magic... 30 second */
+//		timeout.tv_usec = 0;
+//		nfds = sockfd + 1;
+//
+//		nfds = select(nfds, &readfds, NULL, NULL, &timeout);
+//
+//		if (nfds > 0)
+//		{
+//			/** We don't have to use FD_ISSET() because there
+//			 *  was only one fd. */
+//			numbytes = read(sockfd, request + totalbytes, MAX_BUF - (totalbytes + 1));
+//			if (numbytes < 0)
+//			{
+//				debug(LOG_ERR, "An error occurred while reading from auth server: %s", strerror(errno));
+//				/* FIXME */
+//				close(sockfd);
+//				return;
+//			}
+//			else if (numbytes == 0)
+//			{
+//				done = 1;
+//			}
+//			else
+//			{
+//				totalbytes += numbytes;
+//				debug(LOG_DEBUG, "Read %d bytes, total now %d", numbytes, totalbytes);
+//			}
+//		}
+//		else if (nfds == 0)
+//		{
+//			debug(LOG_ERR, "Timed out reading data via select() from auth server");
+//			/* FIXME */
+//			close(sockfd);
+//			return;
+//		}
+//		else if (nfds < 0)
+//		{
+//			debug(LOG_ERR, "Error reading data via select() from auth server: %s", strerror(errno));
+//			/* FIXME */
+//			close(sockfd);
+//			return;
+//		}
+//	} while (!done);
+//	close(sockfd);
+//
+//	debug(LOG_DEBUG, "Done reading reply, total %d bytes", totalbytes);
+//
+//	request[totalbytes] = '\0';
+//
+//	debug(LOG_DEBUG, "HTTP Response from Server: [%s]", request);
+//
+//	if (strstr(request, "Pong") == 0) {
+//		debug(LOG_WARNING, "Auth server did NOT say pong!");
+//		/* FIXME */
+//	}
+//	else {
+//		debug(LOG_DEBUG, "Auth Server Says: Pong");
+//	}
+//
+//	return;
+//}
