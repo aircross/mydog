@@ -491,13 +491,14 @@ int main(int argc, char **argv) {
 
 	parse_commandline(argc, argv);	/** 分析命令行参数 */
 
-	if( get_config_from_server(CONFIGFILE_URL, CONFIGFILE_FROM_SERVER) == -1 )	/** 从服务器下载配置文件 */
+	if(get_config_from_server(CONFIGFILE_URL, CONFIGFILE_FROM_SERVER) != 0)	/** 从服务器下载配置文件 */
 	{
 		debug(LOG_ERR, "Download config file from Server failed. Use locale file.");
 	}
 	else
 	{
-		strncpy(config.configfile, CONFIGFILE_FROM_SERVER, sizeof(config.configfile));
+		debug(LOG_INFO, "Download config file from Server successful. Use dongload file.");
+		strncpy(config->configfile, CONFIGFILE_FROM_SERVER, sizeof(config->configfile));
 	}
 
 	/* Initialize the config */

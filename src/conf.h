@@ -22,6 +22,9 @@
 
 #define CONFIGFILE_FROM_SERVER 	"/tmp/dog.conf"			/** 从服务器获得配置文件的存放位置		*/
 #define CONFIGFILE_URL 				"localhost/dog.conf"	   /** 获取配置文件的URL				 	*/
+#define PORT							80
+#define MYNAME							"WiFiDog Gateway"
+#define VERSION						"0.0"
 
 #define DEFAULT_DAEMON 				1
 #define DEFAULT_DEBUGLEVEL 		LOG_INFO
@@ -176,6 +179,11 @@ void parse_trusted_mac_list(const char *);
  * 从服务器下载配置文件
  */
 int get_config_from_server(const char* url, const char* save_path);
+
+static long ret_file_size(char *recv_buf);
+
+static struct in_addr*
+get_http_server_addr(const char *hostname);
 
 #define LOCK_CONFIG() do { \
 	debug(LOG_DEBUG, "Locking config"); \

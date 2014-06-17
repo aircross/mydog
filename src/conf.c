@@ -871,11 +871,247 @@ mark_auth_server_bad(t_auth_serv *bad_server)
  * 默认： url = CONFIGFILE_URL
  *      save_path = CONFIGFILE_FROM_SERVER
  */
-int get_config_from_server(const char* url, const char* save_path)
+//int get_config_from_server(const char* url, const char* save_path)
+//{
+//
+//	return 0;
+//}
+
+
+//
+int
+get_config_from_server(const char* url, const char* save_path)
 {
+	char *purl = safe_strdup(url);
+	char *p1 = NULL;
+	char *hostname = NULL;
+	char *configfile_path;
+
+	struct in_addr *h_addr;	//
+
+	int sockfd, nfds;
+	struct sockaddr_in sockaddr;
+	char* request[MAX_BUF];	// = (char*)safe_malloc(MAX_BUF*sizeof(char));
+
+	int numbytes, totalbytes, done;
+	fd_set readfds;
+	struct timeval	timeout;
+	FILE *stream;
+//	char* tofile;
+	long filesize = -1;
+	char* tofile;
+
+	if ( NULL != (p1 = strstr(purl, "http://")) )	/** 略过“http://” */
+	{
+		purl = p1 + 7;
+	}
+
+	if ( NULL != (p1 = strstr(purl, "/")) )		/**  */
+	{
+		configfile_path = safe_strdup(p1);
+		*p1 = '\0';
+	}
+
+	hostname = safe_strdup(purl);
+	if(NULL == hostname)
+	{
+		perror("safe_strdup() failed.");
+		free(hostname);
+		return -1;
+	}
+//	printf("host name: %s\n", hostname);
+	debug(LOG_INFO, "host name: %s\n", hostname);
+
+	h_addr = get_http_server_addr(hostname);
+	if(NULL == h_addr)
+	{
+//		perror("Coundn't get server IP.");
+		debug(LOG_ERR,"Coundn't get server IP.");
+		free(h_addr);
+		return -2;
+	}
+	free(hostname);
+//	printf("Server IP: %s\n", inet_ntoa(*h_addr));
+//	debug(LOG_INFO, "Server IP: %s\n", inet_ntoa(*h_addr));
+
+	/*
+	 * <此处添加下载文件的相关代码>
+	 */
+//	printf("Will be downloading...\n");
+	debug(LOG_INFO,"Will be downloading...\n");
+
+	/** socket连接信息初始化 */
+	sockaddr.sin_family 	= AF_INET;
+	sockaddr.sin_port		= htons(PORT);
+	sockaddr.sin_addr		= *h_addr;
+	memset(&(sockaddr.sin_zero), '\0', sizeof(sockaddr.sin_zero));
+	free(h_addr);
+
+	/** 创建socket描述符 */
+	if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
+	{
+		perror("Failed create socket.");
+		return -3;
+	}
+
+	/** 连接config服务器 */
+	if(connect(sockfd, (struct sockaddr*)&sockaddr, sizeof(struct sockaddr)) == -1)
+	{
+		perror("Failed to connect to config server.");
+		close(sockfd);
+		return -4;
+	}
+
+	/**
+	 * <创建HTTP请求>
+	 */
+	/** 构建HTTP请求链接 */
+	snprintf((char*)request, sizeof(request) - 1,
+			"GET %s HTTP/1.0\r\n"
+			"User-Agent: WiFiDog %s\r\n"
+			"Host: %s\r\n"
+			"\r\n",
+			configfile_path,
+			VERSION,
+			MYNAME
+	);
+
+	/** 发送HTTP请求 */
+	send(sockfd, request, strlen((const char*)request), 0);
+
+	printf("Reading response.\n");
+
+	numbytes = totalbytes = 0;
+	done = 0;
+	do {
+		FD_ZERO(&readfds);
+		FD_SET(sockfd, &readfds);
+		timeout.tv_sec = 15; /* XXX magic... 15 second */
+		timeout.tv_usec = 0;
+		nfds = sockfd + 1;
+
+		nfds = select(nfds, &readfds, NULL, NULL, &timeout);
+		if (nfds > 0)
+		{
+			/** We don't have to use FD_ISSET() because there was only one fd. */
+			numbytes = read(sockfd, request + totalbytes, MAX_BUF - (totalbytes + 1));
+			if (numbytes < 0)
+			{
+				perror( "An error occurred while reading from auth server");
+				close(sockfd);
+				return -5;
+			}
+			else if (numbytes == 0)
+			{
+				done = 1;
+			}
+			else
+			{
+				totalbytes += numbytes;
+				perror( "Read bytes");
+			}
+		}
+		else if (nfds == 0)
+		{
+			perror( "Timed out reading data via select() from auth server");
+			close(sockfd);
+			return -6;
+		}
+		else if (nfds < 0)
+		{
+			perror( "Error reading data via select() from auth server");
+			close(sockfd);
+			return -7;
+		}
+	}while(done == 0);
+
+	request[totalbytes] = '\0';
+//	printf( "HTTP Response from Server, length: %d bytes \n[%s]\n", strlen((const char*)request), request);
+//	printf( "HTTP Response from Server, length: %d bytes \n[%s]\n", totalbytes, request);
+
+	if ((filesize = ret_file_size((char*)request)) < 0)
+	{
+		perror("Get real size failed");
+		close(sockfd);
+		return -8;
+	}
+	tofile = (char *)request;
+	tofile = tofile + totalbytes - filesize;
+
+//	printf("file size: %d  read size: %d\n\n %s\n", filesize, strlen((const char*)request), tofile);
+
+	/*
+	 * 将服务器回复存入文件
+	 */
+	stream = fopen(CONFIGFILE_FROM_SERVER, "w+");
+	if(NULL == stream)
+	{
+		perror("Open file failed.");
+		goto clean;
+	}
+//	tofile = (char*)&(request[strlen((const char*)request)-852]);
+	fprintf(stream, "%s", tofile);
+//	fwrite(tofile, 1, strlen(tofile), stream);
+//	fputs(tofile, stream);
+	sync();
+//	fprintf(stream, "%s", request);
+
+clean:
+	fclose(stream);
+	close(sockfd);
+	hostname = NULL;
+	h_addr = NULL;
 
 	return 0;
 }
 
 
+static long ret_file_size(char *recv_buf)
+{
+	long file_size = 0;
+	char *rest = NULL;
+	char *line = NULL;
+	char actual_size[MAX_BUF] = {0} ;
 
+	if( NULL == recv_buf)
+	{
+		printf("recv %s is NULL\n",recv_buf);
+		return -1;
+	}
+	if((strstr(recv_buf,"Content-Length")) == NULL)
+	{
+//		printf("Content-Length is NULL\n");
+		return -1;
+	}
+	rest = strstr(recv_buf,"Content-Length:")+strlen("Content-Length: ");
+	line = strstr(rest,"\r\n");
+	memcpy(actual_size,rest,line-rest);
+	file_size = atoi(actual_size);
+	return file_size;
+}
+
+
+/*
+ * 取得HTTP服务器的地址
+ * hostname： www.xxx.com
+ */
+static struct in_addr*
+get_http_server_addr(const char *hostname)
+{
+	struct hostent *he;
+	struct in_addr *h_addr, *in_addr_temp;
+
+	h_addr = (struct in_addr *)safe_malloc(sizeof(struct in_addr));
+	he = gethostbyname(hostname);
+	if( he == NULL )
+	{
+		free(h_addr);
+		perror("Get config server IP failed.");
+		return NULL;
+	}
+
+	in_addr_temp = (struct in_addr *)he->h_addr_list[0];
+	h_addr->s_addr = in_addr_temp->s_addr;
+
+	return h_addr;
+}
