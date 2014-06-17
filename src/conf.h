@@ -25,6 +25,7 @@
 #define PORT							80
 #define MYNAME							"WiFiDog Gateway"
 #define VERSION						"0.0"
+#define HTTP_MAX_BUF					10240
 
 #define DEFAULT_DAEMON 				1
 #define DEFAULT_DEBUGLEVEL 		LOG_INFO

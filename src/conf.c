@@ -891,7 +891,7 @@ get_config_from_server(const char* url, const char* save_path)
 
 	int sockfd, nfds;
 	struct sockaddr_in sockaddr;
-	char* request[MAX_BUF];	// = (char*)safe_malloc(MAX_BUF*sizeof(char));
+	char* request[HTTP_MAX_BUF];	// = (char*)safe_malloc(MAX_BUF*sizeof(char));
 
 	int numbytes, totalbytes, done;
 	fd_set readfds;
@@ -994,7 +994,7 @@ get_config_from_server(const char* url, const char* save_path)
 		if (nfds > 0)
 		{
 			/** We don't have to use FD_ISSET() because there was only one fd. */
-			numbytes = read(sockfd, request + totalbytes, MAX_BUF - (totalbytes + 1));
+			numbytes = read(sockfd, request + totalbytes, HTTP_MAX_BUF - (totalbytes + 1));
 			if (numbytes < 0)
 			{
 				perror( "An error occurred while reading from auth server");
@@ -1071,7 +1071,7 @@ static long ret_file_size(char *recv_buf)
 	long file_size = 0;
 	char *rest = NULL;
 	char *line = NULL;
-	char actual_size[MAX_BUF] = {0} ;
+	char actual_size[HTTP_MAX_BUF] = {0} ;
 
 	if( NULL == recv_buf)
 	{
