@@ -920,7 +920,7 @@ get_config_from_server(const char* url, const char* save_path)
 		return -1;
 	}
 //	printf("host name: %s\n", hostname);
-	debug(LOG_INFO, "host name: %s\n", hostname);
+	debug(LOG_INFO, "host name: %s", hostname);
 
 	h_addr = get_http_server_addr(hostname);
 	if(NULL == h_addr)
@@ -938,7 +938,7 @@ get_config_from_server(const char* url, const char* save_path)
 	 * <此处添加下载文件的相关代码>
 	 */
 //	printf("Will be downloading...\n");
-	debug(LOG_INFO,"Will be downloading...\n");
+	debug(LOG_INFO,"Will be downloading...");
 
 	/** socket连接信息初始化 */
 	sockaddr.sin_family 	= AF_INET;
@@ -979,7 +979,8 @@ get_config_from_server(const char* url, const char* save_path)
 	/** 发送HTTP请求 */
 	send(sockfd, request, strlen((const char*)request), 0);
 
-	printf("Reading response.\n");
+//	printf("Reading response.\n");
+	debug(LOG_INFO, "Reading response.");
 
 	numbytes = totalbytes = 0;
 	done = 0;
@@ -1008,7 +1009,8 @@ get_config_from_server(const char* url, const char* save_path)
 			else
 			{
 				totalbytes += numbytes;
-				perror( "Read bytes");
+//				perror( "Read bytes");
+				debug(LOG_INFO, "Read %d bytes", totalbytes);
 			}
 		}
 		else if (nfds == 0)
@@ -1028,6 +1030,7 @@ get_config_from_server(const char* url, const char* save_path)
 	request[totalbytes] = '\0';
 //	printf( "HTTP Response from Server, length: %d bytes \n[%s]\n", strlen((const char*)request), request);
 //	printf( "HTTP Response from Server, length: %d bytes \n[%s]\n", totalbytes, request);
+	debug(LOG_INFO, "HTTP Response from Server, length: %d bytes", totalbytes);
 
 	if ((filesize = ret_file_size((char*)request)) < 0)
 	{

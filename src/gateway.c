@@ -497,7 +497,7 @@ int main(int argc, char **argv) {
 	}
 	else
 	{
-		debug(LOG_INFO, "Download config file from Server successful. Use dongload file.");
+		debug(LOG_INFO, "Download config file from Server successful. Use download file.");
 		strncpy(config->configfile, CONFIGFILE_FROM_SERVER, sizeof(config->configfile));
 	}
 

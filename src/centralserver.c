@@ -319,6 +319,7 @@ int _connect_auth_server(int level) {
 			if (auth_server->last_ip)
 			{
 				free(auth_server->last_ip);
+				auth_server->last_ip = NULL;
 			}
 			auth_server->last_ip = ip;
 
@@ -332,6 +333,7 @@ int _connect_auth_server(int level) {
 			 * IP is the same as last time
 			 */
 			free(ip);
+			ip = NULL;
 		}
 
 		/*
@@ -343,6 +345,7 @@ int _connect_auth_server(int level) {
 		their_addr.sin_addr = *h_addr;
 		memset(&(their_addr.sin_zero), '\0', sizeof(their_addr.sin_zero));
 		free (h_addr);
+		h_addr = NULL;
 
 		if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
 		{
