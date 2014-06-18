@@ -141,13 +141,15 @@ thread_wdctl_handler(void *arg)
 	memset(request, 0, sizeof(request));
 	
 	/* Read.... */
-	while (!done && read_bytes < (sizeof(request) - 1)) {
-		len = read(fd, request + read_bytes,
-				sizeof(request) - read_bytes);
+	while (!done && read_bytes < (sizeof(request) - 1))
+	{
+		len = read(fd, request + read_bytes, sizeof(request) - read_bytes);
 
 		/* Have we gotten a command yet? */
-		for (i = read_bytes; i < (read_bytes + len); i++) {
-			if (request[i] == '\r' || request[i] == '\n') {
+		for (i = read_bytes; i < (read_bytes + len); i++)
+		{
+			if (request[i] == '\r' || request[i] == '\n')
+			{
 				request[i] = '\0';
 				done = 1;
 			}
@@ -157,17 +159,25 @@ thread_wdctl_handler(void *arg)
 		read_bytes += len;
 	}
 
-	if (strncmp(request, "status", 6) == 0) {
+	if (strncmp(request, "status", 6) == 0)
+	{
 		wdctl_status(fd);
-	} else if (strncmp(request, "stop", 4) == 0) {
+	}
+	else if (strncmp(request, "stop", 4) == 0)
+	{
 		wdctl_stop(fd);
-	} else if (strncmp(request, "reset", 5) == 0) {
+	}
+	else if (strncmp(request, "reset", 5) == 0)
+	{
 		wdctl_reset(fd, (request + 6));
-	} else if (strncmp(request, "restart", 7) == 0) {
+	}
+	else if (strncmp(request, "restart", 7) == 0)
+	{
 		wdctl_restart(fd);
 	}
 
-	if (!done) {
+	if (!done)
+	{
 		debug(LOG_ERR, "Invalid wdctl request.");
 		shutdown(fd, 2);
 		close(fd);
