@@ -202,21 +202,28 @@ http_callback_auth(httpd *webserver, request *r)
 	httpVar * token;
 	char	*mac;
 	httpVar *logout = httpdGetVariableByName(r, "logout");
-	if ((token = httpdGetVariableByName(r, "token"))) {
+	if ((token = httpdGetVariableByName(r, "token")))
+	{
 		/* They supplied variable "token" */
-		if (!(mac = arp_get(r->clientAddr))) {
+		if (!(mac = arp_get(r->clientAddr)))
+		{
 			/* We could not get their MAC address */
 			debug(LOG_ERR, "Failed to retrieve MAC address for ip %s", r->clientAddr);
 			send_http_page(r, "WiFiDog Error", "Failed to retrieve your MAC address");
-		} else {
+		}
+		else
+		{
 			/* We have their MAC address */
 
 			LOCK_CLIENT_LIST();
 			
-			if ((client = client_list_find(r->clientAddr, mac)) == NULL) {
+			if ((client = client_list_find(r->clientAddr, mac)) == NULL)
+			{
 				debug(LOG_DEBUG, "New client for %s", r->clientAddr);
 				client_list_append(r->clientAddr, mac, token->value);
-			} else if (logout) {
+			}
+			else if (logout)
+			{
 			    t_authresponse  authresponse;
 			    s_config *config = config_get_config();
 			    unsigned long long incoming = client->counters.incoming;
@@ -230,38 +237,39 @@ http_callback_auth(httpd *webserver, request *r)
 			    debug(LOG_DEBUG, "Got logout from %s", client->ip);
 			    
 			    /* Advertise the logout if we have an auth server */
-			    if (config->auth_servers != NULL) {
+			   if (config->auth_servers != NULL)
+			    {
 					UNLOCK_CLIENT_LIST();
-					auth_server_request(&authresponse, REQUEST_TYPE_LOGOUT, ip, mac, token->value, 
-									    incoming, outgoing);
+					auth_server_request(&authresponse, REQUEST_TYPE_LOGOUT, ip, mac, token->value, incoming, outgoing);
 					LOCK_CLIENT_LIST();
 					
 					/* Re-direct them to auth server */
-					debug(LOG_INFO, "Got manual logout from client ip %s, mac %s, token %s"
-					"- redirecting them to logout message", client->ip, client->mac, client->token);
-					safe_asprintf(&urlFragment, "%smessage=%s",
-						auth_server->authserv_msg_script_path_fragment,
-						GATEWAY_MESSAGE_ACCOUNT_LOGGED_OUT
-					);
+					debug(LOG_INFO, "Got manual logout from client ip %s, mac %s, token %s" "- redirecting them to logout message", client->ip, client->mac, client->token);
+					safe_asprintf(&urlFragment, "%smessage=%s", auth_server->authserv_msg_script_path_fragment, GATEWAY_MESSAGE_ACCOUNT_LOGGED_OUT);
 					http_send_redirect_to_auth(r, urlFragment, "Redirect to logout message");
 					free(urlFragment);
 			    }
-			    free(ip);
+			   free(ip);
  			} 
- 			else {
+ 			else
+ 			{
 				debug(LOG_DEBUG, "Client for %s is already in the client list", client->ip);
 			}
 			UNLOCK_CLIENT_LIST();
-			if (!logout) {
+			if (!logout)
+			{
 				authenticate_client(r);
 			}
 			free(mac);
 		}
-	} else {
+	}
+	else
+	{
 		/* They did not supply variable "token" */
 		send_http_page(r, "WiFiDog error", "Invalid token");
 	}
 }
+
 
 void send_http_page(request *r, const char *title, const char* message)
 {

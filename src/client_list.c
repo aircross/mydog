@@ -22,7 +22,7 @@ pthread_mutex_t client_list_mutex = PTHREAD_MUTEX_INITIALIZER;
 /** @internal
  * Holds a pointer to the first element of the list 
  */ 
-t_client         *firstclient = NULL;
+t_client *firstclient = NULL;
 
 /** Get the first element of the list of connected clients
  */
@@ -175,16 +175,26 @@ void
 _client_list_free_node(t_client * client)
 {
 
-    if (client->mac != NULL)
-        free(client->mac);
+	if (client->mac != NULL)
+	{
+		free(client->mac);
+		client->mac = NULL;
+	}
 
-    if (client->ip != NULL)
-        free(client->ip);
+	if (client->ip != NULL)
+	{
+		free(client->ip);
+		client->ip = NULL;
+	}
 
-    if (client->token != NULL)
-        free(client->token);
+	if (client->token != NULL)
+	{
+		free(client->token);
+		client->token = NULL;
+	}
 
-    free(client);
+	free(client);
+	client = NULL;
 }
 
 /**
@@ -201,23 +211,32 @@ client_list_delete(t_client * client)
 
     ptr = firstclient;
 
-    if (ptr == NULL) {
+   if (ptr == NULL)
+    {
         debug(LOG_ERR, "Node list empty!");
-    } else if (ptr == client) {
+    }
+   else if (ptr == client)
+    {
         firstclient = ptr->next;
         _client_list_free_node(client);
-    } else {
+    }
+   else
+    {
         /* Loop forward until we reach our point in the list. */
-        while (ptr->next != NULL && ptr->next != client) {
+      while (ptr->next != NULL && ptr->next != client)
+        {
             ptr = ptr->next;
         }
         /* If we reach the end before finding out element, complain. */
-        if (ptr->next == NULL) {
-            debug(LOG_ERR, "Node to delete could not be found.");
-        /* Free element. */
-        } else {
-            ptr->next = client->next;
-            _client_list_free_node(client);
-        }
+		if (ptr->next == NULL)
+		{
+			debug(LOG_ERR, "Node to delete could not be found.");
+		/* Free element. */
+		}
+		else
+		{
+			ptr->next = client->next;
+			_client_list_free_node(client);
+		}
     }
 }

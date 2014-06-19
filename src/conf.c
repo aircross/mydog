@@ -19,6 +19,8 @@
 #include "auth.h"
 #include "firewall.h"
 
+#include "config.h"
+
 #include "util.h"
 
 /** @internal
@@ -812,7 +814,8 @@ config_validate(void)
 	config_notnull(config.gw_interface, "GatewayInterface");
 	config_notnull(config.auth_servers, "AuthServer");
 
-	if (missing_parms) {
+	if (missing_parms)
+	{
 		debug(LOG_ERR, "Configuration is not complete, exiting...");
 		exit(-1);
 	}
@@ -824,7 +827,8 @@ config_validate(void)
 static void
 config_notnull(const void *parm, const char *parmname)
 {
-	if (parm == NULL) {
+	if (parm == NULL)
+	{
 		debug(LOG_ERR, "%s is not set", parmname);
 		missing_parms = 1;
 	}
@@ -850,7 +854,8 @@ mark_auth_server_bad(t_auth_serv *bad_server)
 {
 	t_auth_serv	*tmp;
 
-	if (config.auth_servers == bad_server && bad_server->next != NULL) {
+	if (config.auth_servers == bad_server && bad_server->next != NULL)
+	{
 		/* Go to the last */
 		for (tmp = config.auth_servers; tmp->next != NULL; tmp = tmp->next);
 		/* Set bad server as last */

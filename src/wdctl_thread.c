@@ -60,7 +60,8 @@ thread_wdctl(void *arg)
 	sock_name = (char *)arg;
 	debug(LOG_DEBUG, "Socket name: %s", sock_name);
 
-	if (strlen(sock_name) > (sizeof(sa_un.sun_path) - 1)) {
+	if (strlen(sock_name) > (sizeof(sa_un.sun_path) - 1))
+	{
 		/* TODO: Die handler with logging.... */
 		debug(LOG_ERR, "WDCTL socket name too long");
 		exit(1);
@@ -76,58 +77,58 @@ thread_wdctl(void *arg)
 	unlink(sock_name);
 
 	debug(LOG_DEBUG, "Filling sockaddr_un");
-	strcpy(sa_un.sun_path, sock_name); /* XXX No size check because we
-					    * check a few lines before. */
+	strcpy(sa_un.sun_path, sock_name); /* XXX No size check because we * check a few lines before. */
 	sa_un.sun_family = AF_UNIX;
 	
 	debug(LOG_DEBUG, "Binding socket (%s) (%d)", sa_un.sun_path,
 			strlen(sock_name));
 	
 	/* Which to use, AF_UNIX, PF_UNIX, AF_LOCAL, PF_LOCAL? */
-	if (bind(wdctl_socket_server, (struct sockaddr *)&sa_un, strlen(sock_name) 
-				+ sizeof(sa_un.sun_family))) {
-		debug(LOG_ERR, "Could not bind control socket: %s",
-				strerror(errno));
+	if (bind(wdctl_socket_server, (struct sockaddr *)&sa_un, strlen(sock_name) + sizeof(sa_un.sun_family)))
+	{
+		debug(LOG_ERR, "Could not bind control socket: %s", strerror(errno));
 		pthread_exit(NULL);
 	}
 
-	if (listen(wdctl_socket_server, 5)) {
-		debug(LOG_ERR, "Could not listen on control socket: %s",
-				strerror(errno));
+	if (listen(wdctl_socket_server, 5))
+	{
+		debug(LOG_ERR, "Could not listen on control socket: %s",	strerror(errno));
 		pthread_exit(NULL);
 	}
 
-	while (1) {
+	while (1)
+	{
 		len = sizeof(sa_un);
 		memset(&sa_un, 0, len);
 		fd = (int *) safe_malloc(sizeof(int));
-		if ((*fd = accept(wdctl_socket_server, (struct sockaddr *)&sa_un, &len)) == -1){
+		if ((*fd = accept(wdctl_socket_server, (struct sockaddr *)&sa_un, &len)) == -1)
+		{
 			debug(LOG_ERR, "Accept failed on control socket: %s",
 					strerror(errno));
 			free(fd);
-		} else {
+		}
+		else
+		{
 			debug(LOG_DEBUG, "Accepted connection on wdctl socket %d (%s)", fd, sa_un.sun_path);
 			result = pthread_create(&tid, NULL, &thread_wdctl_handler, (void *)fd);
-			if (result != 0) {
+			if (result != 0)
+			{
 				debug(LOG_ERR, "FATAL: Failed to create a new thread (wdctl handler) - exiting");
 				free(fd);
 				termination_handler(0);
 			}
 			pthread_detach(tid);
 		}
-	}
+	}//end while(1)
 }
 
 
 static void *
 thread_wdctl_handler(void *arg)
 {
-	int	fd,
-		done,
-		i;
+	int	fd, done, i;
 	char	request[MAX_BUF];
-	ssize_t	read_bytes,
-		len;
+	ssize_t	read_bytes, len;
 
 	debug(LOG_DEBUG, "Entering thread_wdctl_handler....");
 
@@ -358,9 +359,16 @@ wdctl_reset(int fd, const char *arg)
 	debug(LOG_DEBUG, "Argument: %s (@%x)", arg, arg);
 	
 	/* We get the node or return... */
-	if ((node = client_list_find_by_ip(arg)) != NULL);
-	else if ((node = client_list_find_by_mac(arg)) != NULL);
-	else {
+	if ((node = client_list_find_by_ip(arg)) != NULL)
+	{
+		debug(LOG_INFO, "Find IP[%s] in client list", arg);
+	}
+	else if ((node = client_list_find_by_mac(arg)) != NULL)
+	{
+		debug(LOG_INFO, "Find MAC[%s] in client list", arg);
+	}
+	else
+	{
 		debug(LOG_DEBUG, "Client not found.");
 		UNLOCK_CLIENT_LIST();
 		if(write(fd, "No", 2) == -1)

@@ -36,11 +36,12 @@ extern long served_this_session;
 void
 thread_client_timeout_check(const void *arg)
 {
-	pthread_cond_t		cond = PTHREAD_COND_INITIALIZER;
-	pthread_mutex_t		cond_mutex = PTHREAD_MUTEX_INITIALIZER;
+	pthread_cond_t		cond 			= PTHREAD_COND_INITIALIZER;
+	pthread_mutex_t	cond_mutex 	= PTHREAD_MUTEX_INITIALIZER;
 	struct	timespec	timeout;
 	
-	while (1) {
+	while (1)
+	{
 		/* Sleep for config.checkinterval seconds... */
 		timeout.tv_sec = time(NULL) + config_get_config()->checkinterval;
 		timeout.tv_nsec = 0;

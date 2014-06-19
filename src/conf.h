@@ -21,11 +21,12 @@
 #endif	
 
 #define CONFIGFILE_FROM_SERVER 	"/tmp/dog.conf"			/** 从服务器获得配置文件的存放位置		*/
-#define CONFIGFILE_URL 				"192.168.10.110/wd_conf/wd_fc20.conf"	   /** 获取配置文件的URL				 	*/
+//#define CONFIGFILE_URL			"http://ServerName/node_config.php?node_id=XXX&platform=XX"
+#define CONFIGFILE_URL 				"http://192.168.10.110/wd_conf/wd_fc20.conf"	   /** 获取配置文件的URL				 	*/
 //#define CONFIGFILE_URL 				"192.168.10.110/wd_conf/wd_hg255d.conf"
 #define PORT							80
 #define MYNAME							"WiFiDog Gateway"
-#define VERSION						"0.0"
+//#define VERSION						"0.0"
 #define HTTP_MAX_BUF					10240
 
 #define DEFAULT_DAEMON 				1

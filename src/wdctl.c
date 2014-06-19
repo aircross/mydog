@@ -71,19 +71,22 @@ parse_commandline(int argc, char **argv)
     extern int optind;
     int c;
 
-    while (-1 != (c = getopt(argc, argv, "s:h"))) {
-        switch(c) {
+    while (-1 != (c = getopt(argc, argv, "s:h")))
+    {
+    	switch(c)
+        {
             case 'h':
                 usage();
                 exit(1);
                 break;
 
             case 's':
-                if (optarg) {
-		    free(config.socket);
-		    config.socket = strdup(optarg);
-                }
-                break;
+                if (optarg)
+                	{
+                	free(config.socket);
+                	config.socket = strdup(optarg);
+                	}
+               break;
 
             default:
                 usage();
@@ -97,23 +100,32 @@ parse_commandline(int argc, char **argv)
 	    exit(1);
     }
 
-    if (strcmp(*(argv + optind), "status") == 0) {
+    if (strcmp(*(argv + optind), "status") == 0)
+    {
 	    config.command = WDCTL_STATUS;
-    } else if (strcmp(*(argv + optind), "stop") == 0) {
+    }
+    else if (strcmp(*(argv + optind), "stop") == 0)
+    {
 	    config.command = WDCTL_STOP;
-    } else if (strcmp(*(argv + optind), "reset") == 0) {
+    }
+    else if (strcmp(*(argv + optind), "reset") == 0)
+    {
 	    config.command = WDCTL_KILL;
-	    if ((argc - (optind + 1)) <= 0) {
+	    if ((argc - (optind + 1)) <= 0)
+	    {
 		    fprintf(stderr, "wdctl: Error: You must specify an IP "
 				    "or a Mac address to reset\n");
 		    usage();
 		    exit(1);
 	    }
 	    config.param = strdup(*(argv + optind + 1));
-    } else if (strcmp(*(argv + optind), "restart") == 0) {
+    }
+    else if (strcmp(*(argv + optind), "restart") == 0)
+    {
 	    config.command = WDCTL_RESTART;
     }
-	 else {
+	 else
+	 {
 	    fprintf(stderr, "wdctl: Error: Invalid command \"%s\"\n", *(argv + optind));
 	    usage();
 	    exit(1);
