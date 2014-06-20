@@ -440,23 +440,11 @@ main_loop(void)
 	}
 	pthread_detach(tid);
 	
-	/* Start heartbeat thread */	if (client->mac != NULL)
-	{
-	free(client->mac);
-
-	}
-
-	if (client->ip != NULL)
-	free(client->ip);
-
-	if (client->token != NULL)
-	free(client->token);
-
-	free(client);
+	/* Start heartbeat thread */
 	result = pthread_create(&tid_ping, NULL, (void *)thread_ping, NULL);
 	if (result != 0)
 	{
-	    debug(LOG_ERR, "FATAL: Failed to create a new thread (ping) - exiting");
+	   debug(LOG_ERR, "FATAL: Failed to create a new thread (ping) - exiting");
 		termination_handler(0);
 	}
 	pthread_detach(tid_ping);

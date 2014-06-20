@@ -337,8 +337,10 @@ request *httpdGetConnection(server, timeout)
 
 		if (timeout != 0 && result == 0)
 		{
-			return(NULL);					/** !!! 这是	 */
-			server->lastError = 0;		/** 什么情况?! */
+//			return(NULL);					/** !!! 这是	 */
+//			server->lastError = 0;		/** 什么情况?! */
+			server->lastError = 0;
+			return(NULL);
 		}
 
 		if (result > 0)
@@ -436,13 +438,8 @@ int httpdReadRequest(httpd *server, request *r)
 				r->request.method = HTTP_POST;
 			if (r->request.method == 0)
 			{
-				_httpd_net_write( r->clientSock,
-				      HTTP_METHOD_ERROR,
-				      strlen(HTTP_METHOD_ERROR));
-				_httpd_net_write( r->clientSock, cp, 
-				      strlen(cp));
-				_httpd_writeErrorLog(server, r, LEVEL_ERROR, 
-					"Invalid method received");
+				_httpd_net_write( r->clientSock, HTTP_METHOD_ERROR, strlen(HTTP_METHOD_ERROR));
+				_httpd_net_write( r->clientSock, cp, strlen(cp));	_httpd_writeErrorLog(server, r, LEVEL_ERROR,	"Invalid method received");
 				return(-1);
 			}
 			cp = cp2+1;
@@ -453,7 +450,7 @@ int httpdReadRequest(httpd *server, request *r)
 				cp2++;
 			*cp2 = 0;
 			strncpy(r->request.path,cp,HTTP_MAX_URL);
-                        r->request.path[HTTP_MAX_URL-1]=0;
+         r->request.path[HTTP_MAX_URL-1]=0;
 			_httpd_sanitiseUrl(r->request.path);
 			continue;
 		}
@@ -514,19 +511,15 @@ int httpdReadRequest(httpd *server, request *r)
 
 					cp = strchr(cp,' ') + 1;
 					_httpd_decode(cp, authBuf, 100);
-					r->request.authLength = 
-						strlen(authBuf);
+					r->request.authLength = strlen(authBuf);
 					cp = strchr(authBuf,':');
 					if (cp)
 					{
 						*cp = 0;
-						strncpy(
-						   r->request.authPassword,
-						   cp+1, HTTP_MAX_AUTH);
-                                                r->request.authPassword[HTTP_MAX_AUTH-1]=0;
+						strncpy( r->request.authPassword, cp+1, HTTP_MAX_AUTH);
+                  r->request.authPassword[HTTP_MAX_AUTH-1]=0;
 					}
-					strncpy(r->request.authUser, 
-						authBuf, HTTP_MAX_AUTH);
+					strncpy(r->request.authUser, authBuf, HTTP_MAX_AUTH);
 					r->request.authUser[HTTP_MAX_AUTH-1]=0;
 				}
 			}
@@ -968,8 +961,8 @@ void httpdPrintf(va_alist)
 void httpdProcessRequest(httpd *server, request *r)
 {
 	char	dirName[HTTP_MAX_URL],
-		entryName[HTTP_MAX_URL],
-		*cp;
+			entryName[HTTP_MAX_URL],
+			*cp;
 	httpDir	*dir;
 	httpContent *entry;
 
@@ -1026,8 +1019,7 @@ void httpdProcessRequest(httpd *server, request *r)
 			break;
 
 		case HTTP_WILDCARD:
-			if (_httpd_sendDirectoryEntry(server, r, entry,
-						entryName)<0)
+			if (_httpd_sendDirectoryEntry(server, r, entry,	entryName)<0)
 			{
 				_httpd_send404(server, r);
 			}

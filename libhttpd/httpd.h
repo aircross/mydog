@@ -181,13 +181,13 @@ typedef struct {
 
 typedef struct {
 	int	clientSock,
-		readBufRemain;
+			readBufRemain;
 	httpReq	request;
-	httpRes response;
+	httpRes 	response;
 	httpVar	*variables;
 	char	readBuf[HTTP_READ_BUF_LEN + 1],
-		*readBufPtr,
-		clientAddr[HTTP_IP_ADDR_LEN];
+			*readBufPtr,
+			clientAddr[HTTP_IP_ADDR_LEN];
 } request;
 
 /***********************************************************************
