@@ -353,7 +353,7 @@ static void
 main_loop(void)
 {
 	int 			result	= -1;
-	pthread_t	tid		= 0UL;		/* ? */
+	pthread_t	tid		= 0UL;
 	s_config 	*config 	= config_get_config();
 	request 		*r 		= NULL;
 	void 			**params = NULL;
@@ -500,7 +500,6 @@ main_loop(void)
 			 * we don't set any... */
 		}
 	}
-
 	/* never reached */
 }
 
