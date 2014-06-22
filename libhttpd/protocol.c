@@ -48,7 +48,7 @@ int _httpd_net_read(sock, buf, len)
 	/* XXX Select based IO */
 
 	int		nfds;
-	fd_set		readfds;
+	fd_set	readfds;
 	struct timeval	timeout;
 	
 	FD_ZERO(&readfds);
@@ -84,8 +84,7 @@ int _httpd_readChar(request *r, char *cp)
 	if (r->readBufRemain == 0)
 	{
 		bzero(r->readBuf, HTTP_READ_BUF_LEN + 1);
-		r->readBufRemain = _httpd_net_read(r->clientSock, 
-			r->readBuf, HTTP_READ_BUF_LEN);
+		r->readBufRemain = _httpd_net_read(r->clientSock, r->readBuf, HTTP_READ_BUF_LEN);
 		if (r->readBufRemain < 1)
 			return(0);
 		r->readBuf[r->readBufRemain] = 0;
@@ -99,13 +98,10 @@ int _httpd_readChar(request *r, char *cp)
 
 int _httpd_readLine(request *r, char *destBuf, int len)
 {
-	char	curChar,
-		*dst;
-	int	count;
-	
+	char	curChar；
+	char  *dst  = destBuf;
+	int	count = 0;
 
-	count = 0;
-	dst = destBuf;
 	while(count < len)
 	{
 		if (_httpd_readChar(r, &curChar) < 1)

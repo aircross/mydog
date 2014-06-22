@@ -892,7 +892,7 @@ get_config_from_server(const char* url, const char* save_path)
 	char *hostname = NULL;
 	char *configfile_path;
 
-	struct in_addr *h_addr;	//
+	struct in_addr *host_addr;	//
 
 	int sockfd, nfds;
 	struct sockaddr_in sockaddr;
@@ -927,12 +927,12 @@ get_config_from_server(const char* url, const char* save_path)
 //	printf("host name: %s\n", hostname);
 	debug(LOG_INFO, "host name: %s", hostname);
 
-	h_addr = get_http_server_addr(hostname);
-	if(NULL == h_addr)
+	host_addr = get_http_server_addr(hostname);
+	if(NULL == host_addr)
 	{
 //		perror("Coundn't get server IP.");
 		debug(LOG_ERR,"Coundn't get server IP.");
-		free(h_addr);
+		free(host_addr);
 		return -2;
 	}
 	free(hostname);
@@ -947,10 +947,10 @@ get_config_from_server(const char* url, const char* save_path)
 
 	/** socket连接信息初始化 */
 	sockaddr.sin_family 	= AF_INET;
-	sockaddr.sin_port		= htons(PORT);
-	sockaddr.sin_addr		= *h_addr;
+	sockaddr.sin_port		= htons(CONFIGGILE_SERVER_PORT);
+	sockaddr.sin_addr		= *host_addr;
 	memset(&(sockaddr.sin_zero), '\0', sizeof(sockaddr.sin_zero));
-	free(h_addr);
+	free(host_addr);
 
 	/** 创建socket描述符 */
 	if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
@@ -971,15 +971,15 @@ get_config_from_server(const char* url, const char* save_path)
 	 * <创建HTTP请求>
 	 */
 	/** 构建HTTP请求链接 */
-	snprintf((char*)request, sizeof(request) - 1,
-			"GET %s HTTP/1.0\r\n"
-			"User-Agent: WiFiDog %s\r\n"
-			"Host: %s\r\n"
-			"\r\n",
-			configfile_path,
-			VERSION,
-			MYNAME
-	);
+	snprintf((char*)request,
+				sizeof(request) - 1,
+				"GET %s HTTP/1.0\r\n"
+				"User-Agent: WiFiDog %s\r\n"
+				"Host: %s\r\n"
+				"\r\n",
+				configfile_path,
+				VERSION,
+				MYNAME);
 
 	/** 发送HTTP请求 */
 	send(sockfd, request, strlen((const char*)request), 0);
@@ -1003,7 +1003,7 @@ get_config_from_server(const char* url, const char* save_path)
 			numbytes = read(sockfd, request + totalbytes, HTTP_MAX_BUF - (totalbytes + 1));
 			if (numbytes < 0)
 			{
-				perror( "An error occurred while reading from auth server");
+				debug(LOG_ERR, "An error occurred while reading from configfile server");
 				close(sockfd);
 				return -5;
 			}
@@ -1020,13 +1020,13 @@ get_config_from_server(const char* url, const char* save_path)
 		}
 		else if (nfds == 0)
 		{
-			perror( "Timed out reading data via select() from auth server");
+			debug(LOG_ERR, "Timed out reading data via select() from configfile server");
 			close(sockfd);
 			return -6;
 		}
 		else if (nfds < 0)
 		{
-			perror( "Error reading data via select() from auth server");
+			debug(LOG_ERR, "Error reading data via select() from configfile server");
 			close(sockfd);
 			return -7;
 		}
@@ -1039,7 +1039,7 @@ get_config_from_server(const char* url, const char* save_path)
 
 	if ((filesize = ret_file_size((char*)request)) < 0)
 	{
-		perror("Get real size failed");
+		debug(LOG_ERR, "Get real size failed");
 		close(sockfd);
 		return -8;
 	}
@@ -1054,7 +1054,8 @@ get_config_from_server(const char* url, const char* save_path)
 	stream = fopen(CONFIGFILE_FROM_SERVER, "w+");
 	if(NULL == stream)
 	{
-		perror("Open file failed.");
+//		perror("Open file failed.");
+		debug(LOG_ERR, "Open file failed.");
 		goto clean;
 	}
 //	tofile = (char*)&(request[strlen((const char*)request)-852]);
@@ -1068,7 +1069,7 @@ clean:
 	fclose(stream);
 	close(sockfd);
 	hostname = NULL;
-	h_addr = NULL;
+	host_addr = NULL;
 
 	return 0;
 }

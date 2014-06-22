@@ -51,10 +51,10 @@ iptables_insert_gateway_id(char **input)
 	if (strstr(*input, "$ID$")==NULL)
 		return;
 
-
 	while ((token=strstr(*input, "$ID$"))!=NULL)
-		/* This string may look odd but it's standard POSIX and ISO C */
+	{	/* This string may look odd but it's standard POSIX and ISO C */
 		memcpy(token, "%1$s", 4);
+	}
 
 	config = config_get_config();
 	safe_asprintf(&buffer, *input, config->gw_interface);
@@ -79,6 +79,7 @@ iptables_do_command(const char *format, ...)
 
 	safe_asprintf(&cmd, "iptables %s", fmt_cmd);
 	free(fmt_cmd);
+	fmt_cmd = NULL;
 
 	iptables_insert_gateway_id(&cmd);
 
@@ -86,15 +87,21 @@ iptables_do_command(const char *format, ...)
 
 	rc = execute(cmd, fw_quiet);	/** 调用exec执行一次shell命令	*/
 
-	if (rc!=0) {
+	if (rc!=0)
+	{
 		// If quiet, do not display the error
 		if (fw_quiet == 0)
+		{
 			debug(LOG_ERR, "iptables command failed(%d): %s", rc, cmd);
+		}
 		else if (fw_quiet == 1)
+		{
 			debug(LOG_DEBUG, "iptables command failed(%d): %s", rc, cmd);
+		}
 	}
 
 	free(cmd);
+	cmd = NULL;
 
 	return rc;
 }
@@ -208,7 +215,7 @@ iptables_fw_set_authservers(void)
 /**
  * Initialize the firewall rules
 */
-	int
+int
 iptables_fw_init(void)
 {
 	const s_config *config;
@@ -221,13 +228,17 @@ iptables_fw_init(void)
 	LOCK_CONFIG();
 	config = config_get_config();
 	gw_port = config->gw_port;
-	if (config->external_interface) {
+	if (config->external_interface)
+	{
 		ext_interface = safe_strdup(config->external_interface);
-	} else {
+	}
+	else
+	{
 		ext_interface = get_ext_iface();
 	}
 
-	if (ext_interface == NULL) {
+	if (ext_interface == NULL)
+	{
 		UNLOCK_CONFIG();
 		debug(LOG_ERR, "FATAL: no external interface");
 		return 0;
@@ -273,7 +284,8 @@ iptables_fw_init(void)
 
 	iptables_do_command("-t nat -A " TABLE_WIFIDOG_OUTGOING " -j " TABLE_WIFIDOG_WIFI_TO_INTERNET);
 
-	if((proxy_port=config_get_config()->proxy_port) != 0){
+	if((proxy_port=config_get_config()->proxy_port) != 0)
+	{
 		debug(LOG_DEBUG,"Proxy port set, setting proxy rule");
 		iptables_do_command("-t nat -A " TABLE_WIFIDOG_WIFI_TO_INTERNET " -p tcp --dport 80 -m mark --mark 0x%u -j REDIRECT --to-port %u", FW_MARK_KNOWN, proxy_port);
 		iptables_do_command("-t nat -A " TABLE_WIFIDOG_WIFI_TO_INTERNET " -p tcp --dport 80 -m mark --mark 0x%u -j REDIRECT --to-port %u", FW_MARK_PROBATION, proxy_port);
@@ -349,7 +361,7 @@ iptables_fw_init(void)
  * This is used when we do a clean shutdown of WiFiDog and when it starts to make
  * sure there are no rules left over
  */
-	int
+int
 iptables_fw_destroy(void)
 {
 	fw_quiet = 1;

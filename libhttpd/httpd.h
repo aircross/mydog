@@ -171,12 +171,12 @@ typedef struct {
 		startTime,
 		lastError;
 	char	fileBasePath[HTTP_MAX_URL],
-		*host;
+		   *host;
 	httpDir	*content;
 	httpAcl	*defaultAcl;
 	http404  *handle404;
-	FILE	*accessLog,
-		*errorLog;
+	FILE	   *accessLog,
+		      *errorLog;
 } httpd;
 
 typedef struct {

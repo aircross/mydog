@@ -121,7 +121,8 @@ arp_get(const char *req_ip)
 	return reply;
 }
 
-/** Initialize the firewall rules
+/**
+ * Initialize the firewall rules
  */
 int fw_init(void)
 {
@@ -130,13 +131,11 @@ int fw_init(void)
 	t_client * client = NULL;
 
 	debug(LOG_INFO, "Creating ICMP socket");
-	if ((icmp_fd = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP)) == -1 || (flags =
-			fcntl(icmp_fd, F_GETFL, 0)) == -1
-			|| fcntl(icmp_fd, F_SETFL, flags | O_NONBLOCK) == -1
-			|| setsockopt(icmp_fd, SOL_SOCKET, SO_RCVBUF, &oneopt,
-					sizeof(oneopt))
-			|| setsockopt(icmp_fd, SOL_SOCKET, SO_DONTROUTE, &zeroopt,
-					sizeof(zeroopt)) == -1)
+	if((icmp_fd = socket(AF_INET, SOCK_RAW, IPPROTO_ICMP)) == -1 ||
+		(flags = fcntl(icmp_fd, F_GETFL, 0)) == -1 ||
+		fcntl(icmp_fd, F_SETFL, flags | O_NONBLOCK) == -1	||
+		setsockopt(icmp_fd, SOL_SOCKET, SO_RCVBUF, &oneopt, sizeof(oneopt)) == -1	||
+		setsockopt(icmp_fd, SOL_SOCKET, SO_DONTROUTE, &zeroopt,	sizeof(zeroopt)) == -1)
 	{
 		debug(LOG_ERR, "Cannot create ICMP raw socket.");
 		return 0;
@@ -147,8 +146,7 @@ int fw_init(void)
 
 	if (restart_orig_pid)
 	{
-		debug(LOG_INFO,
-				"Restoring firewall rules for clients inherited from parent");
+		debug(LOG_INFO, "Restoring firewall rules for clients inherited from parent");
 		LOCK_CLIENT_LIST();
 		client = client_get_first_client();
 		while (client)
@@ -200,11 +198,11 @@ int fw_destroy(void)
 void fw_sync_with_authserver(void)
 {
 	t_authresponse authresponse;
-	char 		*token,
-				*ip,
-				*mac;
-	t_client *p1,
-				*p2;
+	char 		*token = NULL;
+	char		*ip	 = NULL;
+	char		*mac	 = NULL;
+	t_client *p1	 = NULL;
+	t_client	*p2	 = NULL;
 	unsigned long long incoming, outgoing;
 	s_config *config = config_get_config();
 
@@ -341,8 +339,11 @@ void fw_sync_with_authserver(void)
 		}
 
 		free(token);
+		token = NULL;
 		free(ip);
+		ip = NULL;
 		free(mac);
+		mac = NULL;
 	}
 	UNLOCK_CLIENT_LIST();
 }

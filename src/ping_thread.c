@@ -97,7 +97,8 @@ ping(void)
 	/*
 	 * Populate uptime, memfree and load
 	 */
-	if ((fh = fopen("/proc/uptime", "r"))) {
+	if ((fh = fopen("/proc/uptime", "r")))
+	{
 		if(fscanf(fh, "%lu", &sys_uptime) != 1)
 			debug(LOG_CRIT, "Failed to read uptime");
 
@@ -208,11 +209,13 @@ ping(void)
 
 	debug(LOG_DEBUG, "HTTP Response from Server: [%s]", request);
 	
-	if (strstr(request, "Pong") == 0) {
+	if (strstr(request, "Pong") == 0)
+	{
 		debug(LOG_WARNING, "Auth server did NOT say pong!");
 		/* FIXME */
 	}
-	else {
+	else
+	{
 		debug(LOG_DEBUG, "Auth Server Says: Pong");
 	}
 

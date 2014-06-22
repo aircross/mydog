@@ -24,14 +24,14 @@
 //#define CONFIGFILE_URL			"http://ServerName/node_config.php?node_id=XXX&platform=XX"
 #define CONFIGFILE_URL 				"http://192.168.10.110/wd_conf/wd_fc20.conf"	   /** 获取配置文件的URL				 	*/
 //#define CONFIGFILE_URL 				"192.168.10.110/wd_conf/wd_hg255d.conf"
-#define PORT							80
+#define CONFIGGILE_SERVER_PORT	80
 #define MYNAME							"WiFiDog Gateway"
 //#define VERSION						"0.0"
 #define HTTP_MAX_BUF					10240
 
 #define DEFAULT_DAEMON 				1
 #define DEFAULT_DEBUGLEVEL 		LOG_INFO
-#define DEFAULT_HTTPDMAXCONN 		100
+#define DEFAULT_HTTPDMAXCONN 		300
 #define DEFAULT_GATEWAYID 			"default"			/** 默认的NODE ID */
 #define DEFAULT_GATEWAYPORT 		2060
 #define DEFAULT_HTTPDNAME 			"WiFiDog"

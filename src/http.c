@@ -63,11 +63,12 @@ http_callback_404(httpd *webserver, request *r)
 			"<p>The maintainers of this network are aware of this disruption.  We hope that this situation will be resolved soon.</p>"
 			"<p>In a while please <a href='%s'>click here</a> to try your request again.</p>", tmp_url);
 
-                send_http_page(r, "Uh oh! Internet access unavailable!", buf);
+      send_http_page(r, "Uh oh! Internet access unavailable!", buf);
 		free(buf);
 		debug(LOG_INFO, "Sent %s an apology since I am not online - no point sending them to auth server", r->clientAddr);
 	}
-	else if (!is_auth_online()) {
+	else if (!is_auth_online())
+	{
 		/* The auth server is down at the moment - apologize and do not redirect anywhere */
 		char * buf;
 		safe_asprintf(&buf, 
@@ -75,15 +76,17 @@ http_callback_404(httpd *webserver, request *r)
 			"<p>The maintainers of this network are aware of this disruption.  We hope that this situation will be resolved soon.</p>"
 			"<p>In a couple of minutes please <a href='%s'>click here</a> to try your request again.</p>", tmp_url);
 
-                send_http_page(r, "Uh oh! Login screen unavailable!", buf);
+      send_http_page(r, "Uh oh! Login screen unavailable!", buf);
 		free(buf);
 		debug(LOG_INFO, "Sent %s an apology since auth server not online - no point sending them to auth server", r->clientAddr);
 	}
-	else {
+	else
+	{
 		/* Re-direct them to auth server */
 		char *urlFragment;
 
-		if (!(mac = arp_get(r->clientAddr))) {
+		if (!(mac = arp_get(r->clientAddr)))
+		{
 			/* We could not get their MAC address */
 			debug(LOG_INFO, "Failed to retrieve MAC address for ip %s, so not putting in the login request", r->clientAddr);
 			safe_asprintf(&urlFragment, "%sgw_address=%s&gw_port=%d&gw_id=%s&url=%s",
@@ -92,7 +95,9 @@ http_callback_404(httpd *webserver, request *r)
 				config->gw_port, 
 				config->gw_id,
 				url);
-		} else {			
+		}
+		else
+		{
 			debug(LOG_INFO, "Got client MAC address for ip %s: %s", r->clientAddr, mac);
 			safe_asprintf(&urlFragment, "%sgw_address=%s&gw_port=%d&gw_id=%s&mac=%s&url=%s",
 				auth_server->authserv_login_script_path_fragment,
@@ -153,10 +158,13 @@ void http_send_redirect_to_auth(request *r, const char *urlFragment, const char 
 	int port = 80;
 	t_auth_serv	*auth_server = get_auth_server();
 
-	if (auth_server->authserv_use_ssl) {
+	if (auth_server->authserv_use_ssl)
+	{
 		protocol = "https";
 		port = auth_server->authserv_ssl_port;
-	} else {
+	}
+	else
+	{
 		protocol = "http";
 		port = auth_server->authserv_http_port;
 	}
@@ -170,7 +178,8 @@ void http_send_redirect_to_auth(request *r, const char *urlFragment, const char 
 		urlFragment
 	);
 	http_send_redirect(r, url, text);
-	free(url);	
+	free(url);
+	url = NULL;
 }
 
 /** @brief Sends a redirect to the web browser 
@@ -189,10 +198,13 @@ void http_send_redirect(request *r, const char *url, const char *text)
 	httpdSetResponse(r, response);
 	httpdAddHeader(r, header);
 	free(response);
+	response = NULL;
 	free(header);
+	header = NULL;
 	safe_asprintf(&message, "Please <a href='%s'>click here</a>.", url);
 	send_http_page(r, text ? text : "Redirection to message", message);
 	free(message);
+	message = NULL;
 }
 
 void 
@@ -261,6 +273,7 @@ http_callback_auth(httpd *webserver, request *r)
 				authenticate_client(r);
 			}
 			free(mac);
+			mac = NULL;
 		}
 	}
 	else
@@ -300,6 +313,7 @@ void send_http_page(request *r, const char *title, const char* message)
     {
         debug(LOG_CRIT, "Failed to read HTML message file: %s", strerror(errno));
         free(buffer);
+        buffer = NULL;
         close(fd);
         return;
     }

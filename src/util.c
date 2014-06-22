@@ -67,9 +67,9 @@ long served_this_session = 0;
 int
 execute(const char *cmd_line, int quiet)
 {
-	int pid,
-		status,
-		rc;
+	int pid;
+	int status;
+	int rc;
 
 	const char *new_argv[4];
 	new_argv[0] = "/bin/sh";
@@ -79,14 +79,20 @@ execute(const char *cmd_line, int quiet)
 
 	pid = safe_fork();
 	if (pid == 0) {    /* for the child process:         */
-			/* We don't want to see any errors if quiet flag is on */
-			if (quiet) close(2);
-			if (execvp("/bin/sh", (char *const *)new_argv) == -1) {    /* execute the command  */
-					debug(LOG_ERR, "execvp(): %s", strerror(errno));
-			} else {
-					debug(LOG_ERR, "execvp() failed");
-			}
-			exit(1);
+		/* We don't want to see any errors if quiet flag is on */
+		if (quiet)
+		{
+			close(2);
+		}
+		if (execvp("/bin/sh", (char *const *)new_argv) == -1)
+		{    /* execute the command  */
+				debug(LOG_ERR, "execvp(): %s", strerror(errno));
+		}
+		else
+		{
+				debug(LOG_ERR, "execvp() failed");
+		}
+		exit(1);
 	}
 
 	/* for the parent:      */
@@ -257,49 +263,65 @@ char *
 get_ext_iface(void)
 {
 #ifdef __linux__
-FILE *input;
-char *device, *gw;
-int i = 1;
-int keep_detecting = 1;
-pthread_cond_t		cond = PTHREAD_COND_INITIALIZER;
-pthread_mutex_t		cond_mutex = PTHREAD_MUTEX_INITIALIZER;
-struct	timespec	timeout;
-device = (char *)malloc(16);
-gw = (char *)malloc(16);
-debug(LOG_DEBUG, "get_ext_iface(): Autodectecting the external interface from routing table");
-while(keep_detecting) {
-	input = fopen("/proc/net/route", "r");
-	while (!feof(input)) {
-		/* XXX scanf(3) is unsafe, risks overrun */
-		if ((fscanf(input, "%s %s %*s %*s %*s %*s %*s %*s %*s %*s %*s\n", device, gw) == 2) && strcmp(gw, "00000000") == 0) {
-			free(gw);
-			debug(LOG_INFO, "get_ext_iface(): Detected %s as the default interface after try %d", device, i);
-			return device;
+	FILE *input;
+	char *device, *gw;
+	int i = 1;
+	int keep_detecting = 1;
+	pthread_cond_t		cond = PTHREAD_COND_INITIALIZER;
+	pthread_mutex_t	cond_mutex = PTHREAD_MUTEX_INITIALIZER;
+	struct	timespec	timeout;
+
+	device = (char *)malloc(16);
+	gw = (char *)malloc(16);
+	debug(LOG_DEBUG, "get_ext_iface(): Autodectecting the external interface from routing table");
+
+	while(keep_detecting)
+	{
+		input = fopen("/proc/net/route", "r");
+		while (!feof(input))
+		{
+			/* XXX scanf(3) is unsafe, risks overrun */
+			if ((fscanf(input, "%s %s %*s %*s %*s %*s %*s %*s %*s %*s %*s\n", device, gw) == 2) && strcmp(gw, "00000000") == 0)
+			{
+				free(gw);
+				gw = NULL;
+				debug(LOG_INFO, "get_ext_iface(): Detected %s as the default interface after try %d", device, i);
+				return device;
+			}
 		}
+		fclose(input);
+		debug(LOG_ERR, "get_ext_iface(): Failed to detect the external interface after try %d (maybe the interface is not up yet?).  Retry limit: %d", i, NUM_EXT_INTERFACE_DETECT_RETRY);
+
+		/* Sleep for EXT_INTERFACE_DETECT_RETRY_INTERVAL seconds */
+		timeout.tv_sec = time(NULL) + EXT_INTERFACE_DETECT_RETRY_INTERVAL;
+		timeout.tv_nsec = 0;
+
+		/* Mutex must be locked for pthread_cond_timedwait... */
+		pthread_mutex_lock(&cond_mutex);
+
+		/* Thread safe "sleep" */
+		pthread_cond_timedwait(&cond, &cond_mutex, &timeout);
+
+		/* No longer needs to be locked */
+		pthread_mutex_unlock(&cond_mutex);
+
+		//for (i=1; i<=NUM_EXT_INTERFACE_DETECT_RETRY; i++) {
+		if (NUM_EXT_INTERFACE_DETECT_RETRY != 0 && i>NUM_EXT_INTERFACE_DETECT_RETRY)
+		{
+			keep_detecting = 0;
+		}
+		i++;
 	}
-	fclose(input);
-	debug(LOG_ERR, "get_ext_iface(): Failed to detect the external interface after try %d (maybe the interface is not up yet?).  Retry limit: %d", i, NUM_EXT_INTERFACE_DETECT_RETRY);
-	/* Sleep for EXT_INTERFACE_DETECT_RETRY_INTERVAL seconds */
-	timeout.tv_sec = time(NULL) + EXT_INTERFACE_DETECT_RETRY_INTERVAL;
-	timeout.tv_nsec = 0;
-	/* Mutex must be locked for pthread_cond_timedwait... */
-	pthread_mutex_lock(&cond_mutex);
-	/* Thread safe "sleep" */
-	pthread_cond_timedwait(&cond, &cond_mutex, &timeout);
-	/* No longer needs to be locked */
-	pthread_mutex_unlock(&cond_mutex);
-	//for (i=1; i<=NUM_EXT_INTERFACE_DETECT_RETRY; i++) {
-	if (NUM_EXT_INTERFACE_DETECT_RETRY != 0 && i>NUM_EXT_INTERFACE_DETECT_RETRY) {
-		keep_detecting = 0;
-	}
-	i++;
-}
-debug(LOG_ERR, "get_ext_iface(): Failed to detect the external interface after %d tries, aborting", i);
-exit(1);
-free(device);
-free(gw);
+
+	debug(LOG_ERR, "get_ext_iface(): Failed to detect the external interface after %d tries, aborting", i);
+	exit(1);
+	free(device);
+	device = NULL;
+	free(gw);
+	gw = NULL;
 #endif
-return NULL;
+
+	return NULL;
 }
 
 void mark_online() {
@@ -333,12 +355,15 @@ void mark_offline() {
 
 }
 
-int is_online() {
-	if (last_online_time == 0 || (last_offline_time - last_online_time) >= (config_get_config()->checkinterval * 2) ) {
+int is_online()
+{
+	if (last_online_time == 0 || (last_offline_time - last_online_time) >= (config_get_config()->checkinterval * 2) )
+	{
 		/* We're probably offline */
 		return (0);
 	}
-	else {
+	else
+	{
 		/* We're probably online */
 		return (1);
 	}

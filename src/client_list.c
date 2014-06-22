@@ -71,14 +71,16 @@ client_list_append(const char *ip, const char *mac, const char *token)
     curclient->counters.incoming = curclient->counters.incoming_history = curclient->counters.outgoing = curclient->counters.outgoing_history = 0;
     curclient->counters.last_updated = time(NULL);
 
-    if (prevclient == NULL) {
+    if (prevclient == NULL)
+    {
         firstclient = curclient;
-    } else {
+    }
+    else
+    {
         prevclient->next = curclient;
     }
 
-    debug(LOG_INFO, "Added a new client to linked list: IP: %s Token: %s",
-          ip, token);
+    debug(LOG_INFO, "Added a new client to linked list: IP: %s Token: %s", ip, token);
 
     return curclient;
 }

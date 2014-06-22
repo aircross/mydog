@@ -101,7 +101,8 @@ void get_clients_from_parent(void) {
 	sa_un.sun_family = AF_UNIX;
 	strncpy(sa_un.sun_path, config->internal_sock, (sizeof(sa_un.sun_path) - 1));
 
-	if (connect(sock, (struct sockaddr *)&sa_un, strlen(sa_un.sun_path) + sizeof(sa_un.sun_family))) {
+	if (connect(sock, (struct sockaddr *)&sa_un, strlen(sa_un.sun_path) + sizeof(sa_un.sun_family)))
+	{
 		debug(LOG_ERR, "Failed to connect to parent (%s) - client list not downloaded", strerror(errno));
 		return;
 	}
@@ -115,75 +116,97 @@ void get_clients_from_parent(void) {
 	len = 0;
 	client = NULL;
 	/* Get line by line */
-	while (read(sock, &onechar, 1) == 1) {
-		if (onechar == '\n') {
+	while (read(sock, &onechar, 1) == 1)
+	{
+		if (onechar == '\n')
+		{
 			/* End of line */
 			onechar = '\0';
 		}
 		linebuffer[len++] = onechar;
 
-		if (!onechar) {
+		if (!onechar)
+		{
 			/* We have a complete entry in linebuffer - parse it */
 			debug(LOG_DEBUG, "Received from parent: [%s]", linebuffer);
 			running1 = linebuffer;
-			while ((token1 = strsep(&running1, "|")) != NULL) {
-				if (!command) {
+			while ((token1 = strsep(&running1, "|")) != NULL)
+			{
+				if (!command)
+				{
 					/* The first token is the command */
 					command = token1;
 				}
-				else {
+				else
+				{
 				/* Token1 has something like "foo=bar" */
 					running2 = token1;
 					key = value = NULL;
-					while ((token2 = strsep(&running2, "=")) != NULL) {
-						if (!key) {
+					while ((token2 = strsep(&running2, "=")) != NULL)
+					{
+						if (!key)
+						{
 							key = token2;
 						}
-						else if (!value) {
+						else if (!value)
+						{
 							value = token2;
 						}
 					}
 				}
 
-				if (strcmp(command, "CLIENT") == 0) {
+				if (strcmp(command, "CLIENT") == 0)
+				{
 					/* This line has info about a client in the client list */
-					if (!client) {
+					if (!client)
+					{
 						/* Create a new client struct */
 						client = safe_malloc(sizeof(t_client));
 						memset(client, 0, sizeof(t_client));
 					}
 				}
 
-				if (key && value) {
-					if (strcmp(command, "CLIENT") == 0) {
+				if (key && value)
+				{
+					if (strcmp(command, "CLIENT") == 0)
+					{
 						/* Assign the key into the appropriate slot in the connection structure */
-						if (strcmp(key, "ip") == 0) {
+						if (strcmp(key, "ip") == 0)
+						{
 							client->ip = safe_strdup(value);
 						}
-						else if (strcmp(key, "mac") == 0) {
+						else if (strcmp(key, "mac") == 0)
+						{
 							client->mac = safe_strdup(value);
 						}
-						else if (strcmp(key, "token") == 0) {
+						else if (strcmp(key, "token") == 0)
+						{
 							client->token = safe_strdup(value);
 						}
-						else if (strcmp(key, "fw_connection_state") == 0) {
+						else if (strcmp(key, "fw_connection_state") == 0)
+						{
 							client->fw_connection_state = atoi(value);
 						}
-						else if (strcmp(key, "fd") == 0) {
+						else if (strcmp(key, "fd") == 0)
+						{
 							client->fd = atoi(value);
 						}
-						else if (strcmp(key, "counters_incoming") == 0) {
+						else if (strcmp(key, "counters_incoming") == 0)
+						{
 							client->counters.incoming_history = atoll(value);
 							client->counters.incoming = client->counters.incoming_history;
 						}
-						else if (strcmp(key, "counters_outgoing") == 0) {
+						else if (strcmp(key, "counters_outgoing") == 0)
+						{
 							client->counters.outgoing_history = atoll(value);
 							client->counters.outgoing = client->counters.outgoing_history;
 						}
-						else if (strcmp(key, "counters_last_updated") == 0) {
+						else if (strcmp(key, "counters_last_updated") == 0)
+						{
 							client->counters.last_updated = atol(value);
 						}
-						else {
+						else
+						{
 							debug(LOG_NOTICE, "I don't know how to inherit key [%s] value [%s] from parent", key, value);
 						}
 					}
@@ -191,13 +214,16 @@ void get_clients_from_parent(void) {
 			}
 
 			/* End of parsing this command */
-			if (client) {
+			if (client)
+			{
 				/* Add this client to the client list */
-				if (!firstclient) {
+				if (!firstclient)
+				{
 					firstclient = client;
 					lastclient = firstclient;
 				}
-				else {
+				else
+				{
 					lastclient->next = client;
 					lastclient = client;
 				}
@@ -479,8 +505,7 @@ main_loop(void)
 			 * We should create another thread
 			 */
 			debug(LOG_INFO, "Received connection from %s, spawning worker thread", r->clientAddr);
-			/* The void**'s are a simulation of the normal C
-			 * function calling sequence. */
+			/* The void**'s are a simulation of the normal C function calling sequence. */
 			params = safe_malloc(2 * sizeof(void *));
 			*params = webserver;
 			*(params + 1) = r;

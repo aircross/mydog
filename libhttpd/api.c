@@ -50,7 +50,7 @@
 #  include <varargs.h>
 #endif
 
-#define LISTEN_BACKLOG	1024
+#define LISTEN_BACKLOG	SOMAXCONN
 
 char *httpdUrlEncode(str)
 			const char	*str;
@@ -268,6 +268,7 @@ httpd *httpdCreate(host, port)
 	if (sock  < 0)
 	{
 		free(new);
+		new = NULL;
 		return(NULL);
 	}
 #	ifdef SO_REUSEADDR
@@ -293,9 +294,13 @@ httpd *httpdCreate(host, port)
  * */
 		close(sock);
 		free(new);
+		new = NULL;
 		return(NULL);
 	}
-	listen(sock, LISTEN_BACKLOG);		/** 原生WiFiDog 此处的值很小，忘记具体多少了，太小容易造成并发请求认证数量太多导致WiFiDog崩溃 */
+	listen(sock, LISTEN_BACKLOG);		/** 原生WiFiDog 此处的值很小，忘记具体多少了，
+	                                              * 太小容易造成并发请求认证数量太多导致WiFiDog崩溃
+	                                   * #define LISTEN_BACKLOG	SOMAXCONN
+	                                              */
 	new->startTime = time(NULL);
 	return(new);
 }
@@ -306,8 +311,12 @@ void httpdDestroy(server)
 	if (server == NULL)
 		return;
 	if (server->host)
+	{
 		free(server->host);
+		server->host = NULL;
+	}
 	free(server);
+	server = NULL;
 }
 
 
@@ -316,8 +325,8 @@ request *httpdGetConnection(server, timeout)
 	httpd	*server;
 	struct	timeval *timeout;
 {
-	int			result;
-	char			*ipaddr;
+	int			result = 0;
+	char			*ipaddr = NULL;
 	fd_set		fds;
 	request		*r;
 	socklen_t	addrLen;
@@ -375,7 +384,7 @@ request *httpdGetConnection(server, timeout)
 	r->readBufPtr = NULL;
 
 	/*
-	** Check the default ACL
+	** Check the default ACL 什么是ACL？
 	*/
 	if (server->defaultAcl)
 	{
@@ -624,6 +633,7 @@ void httpdEndRequest(request *r)
 	shutdown(r->clientSock,2);
 	close(r->clientSock);
 	free(r);
+	r = NULL;
 }
 
 
@@ -764,10 +774,10 @@ int httpdAddCContent(server, dir, name, indexFlag, preload, function)
 	int	(*preload)();
 	void	(*function)();
 {
-	httpDir	*dirPtr;
-	httpContent *newEntry;
+	httpDir	*dirPtr = NULL;
+	httpContent *newEntry = NULL;
 
-		dirPtr = _httpd_findContentDir(server, dir, HTTP_TRUE);
+	dirPtr = _httpd_findContentDir(server, dir, HTTP_TRUE);
 	newEntry =  malloc(sizeof(httpContent));
 	if (newEntry == NULL)
 		return(-1);
