@@ -39,6 +39,7 @@ static void wdctl_status(int);
 static void wdctl_stop(int);
 static void wdctl_reset(int, const char *);
 static void wdctl_restart(int);
+static void wdctl_getid(int fd);
 
 /** Launches a thread that monitors the control socket for request
 @param arg Must contain a pointer to a string containing the Unix domain socket to open
@@ -176,6 +177,10 @@ thread_wdctl_handler(void *arg)
 	{
 		wdctl_restart(fd);
 	}
+	else if (strncmp(request, "id", 2) == 0)
+	{
+		wdctl_getid(fd);  /** Get node id */
+	}
 
 	if (!done)
 	{
@@ -209,9 +214,28 @@ wdctl_status(int fd)
 	free(status);
 }
 
+
+static void
+wdctl_getid(int fd)
+{
+	char * status = NULL;
+	int len = 0;
+
+	status = get_nodeid();
+	len = strlen(status);
+
+	if(write(fd, status, len) == -1)
+	{
+		debug(LOG_CRIT, "Write error: %s", strerror(errno));
+	}
+
+	free(status);
+}
+
+
 /** A bit of an hack, self kills.... */
 static void
-wdctl_stop(int fd)
+wdctl_stop(int fd)       /** fd 没有使用！？ */
 {
 	pid_t	pid;
 
@@ -265,12 +289,14 @@ wdctl_restart(int afd)
 	debug(LOG_DEBUG, "Binding socket (%s) (%d)", sa_un.sun_path, strlen(sock_name));
 	
 	/* Which to use, AF_UNIX, PF_UNIX, AF_LOCAL, PF_LOCAL? */
-	if (bind(sock, (struct sockaddr *)&sa_un, strlen(sock_name) + sizeof(sa_un.sun_family))) {
+	if (bind(sock, (struct sockaddr *)&sa_un, strlen(sock_name) + sizeof(sa_un.sun_family)))
+	{
 		debug(LOG_ERR, "Could not bind internal socket: %s", strerror(errno));
 		return;
 	}
 
-	if (listen(sock, 5)) {
+	if (listen(sock, 5))
+	{
 		debug(LOG_ERR, "Could not listen on internal socket: %s", strerror(errno));
 		return;
 	}
@@ -280,13 +306,15 @@ wdctl_restart(int afd)
 	 */
 	debug(LOG_DEBUG, "Forking in preparation for exec()...");
 	pid = safe_fork();
-	if (pid > 0) {
+	if (pid > 0)
+	{
 		/* Parent */
 
 		/* Wait for the child to connect to our socket :*/
 		debug(LOG_DEBUG, "Waiting for child to connect on internal socket");
 		len = sizeof(sa_un);
-		if ((fd = accept(sock, (struct sockaddr *)&sa_un, &len)) == -1){
+		if ((fd = accept(sock, (struct sockaddr *)&sa_un, &len)) == -1)
+		{
 			debug(LOG_ERR, "Accept failed on internal socket: %s", strerror(errno));
 			close(sock);
 			return;
@@ -299,23 +327,29 @@ wdctl_restart(int afd)
 		/* The child is connected. Send them over the socket the existing clients */
 		LOCK_CLIENT_LIST();
 		client = client_get_first_client();
-		while (client) {
+		while (client)
+		{
 			/* Send this client */
 			safe_asprintf(&tempstring, "CLIENT|ip=%s|mac=%s|token=%s|fw_connection_state=%u|fd=%d|counters_incoming=%llu|counters_outgoing=%llu|counters_last_updated=%lu\n", client->ip, client->mac, client->token, client->fw_connection_state, client->fd, client->counters.incoming, client->counters.outgoing, client->counters.last_updated);
 			debug(LOG_DEBUG, "Sending to child client data: %s", tempstring);
 			len = 0;
-			while (len != strlen(tempstring)) {
+			while (len != strlen(tempstring))
+			{
 				written = write(fd, (tempstring + len), strlen(tempstring) - len);
-				if (written == -1) {
+				if (written == -1)
+				{
 					debug(LOG_ERR, "Failed to write client data to child: %s", strerror(errno));
 					free(tempstring);
+					tempstring = NULL;
 					break;
 				}
-				else {
+				else
+				{
 					len += written;
 				}
 			}
 			free(tempstring);
+			tempstring = NULL;
 			client = client->next;
 		}
 		UNLOCK_CLIENT_LIST();
@@ -330,7 +364,8 @@ wdctl_restart(int afd)
 		/* Our job in life is done. Commit suicide! */
 		wdctl_stop(afd);
 	}
-	else {
+	else
+	{
 		/* Child */
 		close(wdctl_socket_server);
 		close(icmp_fd);

@@ -1077,25 +1077,26 @@ clean:
 
 static long ret_file_size(char *recv_buf)
 {
-	long file_size = 0;
+	unsigned long file_size = 0;
 	char *rest = NULL;
 	char *line = NULL;
 	char actual_size[HTTP_MAX_BUF] = {0} ;
 
 	if( NULL == recv_buf)
 	{
-		printf("recv %s is NULL\n",recv_buf);
+		debug(LOG_ERR, "recv %s is NULL\n",recv_buf);
 		return -1;
 	}
 	if((strstr(recv_buf,"Content-Length")) == NULL)
 	{
-//		printf("Content-Length is NULL\n");
+		debug(LOG_ERR, "Content-Length is NULL\n");
 		return -1;
 	}
 	rest = strstr(recv_buf,"Content-Length:")+strlen("Content-Length: ");
 	line = strstr(rest,"\r\n");
 	memcpy(actual_size,rest,line-rest);
 	file_size = atoi(actual_size);
+	debug(LOG_INFO, "Get file size is %uld bytes.", file_size);
 	return file_size;
 }
 

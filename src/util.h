@@ -2,7 +2,8 @@
 #ifndef _UTIL_H_
 #define _UTIL_H_
 
-#define STATUS_BUF_SIZ	16384
+#define STATUS_BUF_SIZ	16384UL
+#define NODEID_BUF_SIZ  64UL
 
 /** @brief Execute a shell command
  */
@@ -36,6 +37,12 @@ int is_auth_online();
  * @brief Creates a human-readable paragraph of the status of wifidog
  */
 char * get_status_text();
+
+/*
+ * @brief Get node id
+ */
+char *get_nodeid();
+
 
 #define LOCK_GHBN() do { \
 	debug(LOG_DEBUG, "Locking wd_gethostbyname()"); \

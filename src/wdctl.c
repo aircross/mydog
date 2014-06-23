@@ -100,36 +100,40 @@ parse_commandline(int argc, char **argv)
 	    exit(1);
     }
 
-    if (strcmp(*(argv + optind), "status") == 0)
-    {
-	    config.command = WDCTL_STATUS;
-    }
-    else if (strcmp(*(argv + optind), "stop") == 0)
-    {
-	    config.command = WDCTL_STOP;
-    }
-    else if (strcmp(*(argv + optind), "reset") == 0)
-    {
-	    config.command = WDCTL_KILL;
-	    if ((argc - (optind + 1)) <= 0)
-	    {
-		    fprintf(stderr, "wdctl: Error: You must specify an IP "
-				    "or a Mac address to reset\n");
-		    usage();
-		    exit(1);
-	    }
-	    config.param = strdup(*(argv + optind + 1));
-    }
-    else if (strcmp(*(argv + optind), "restart") == 0)
-    {
-	    config.command = WDCTL_RESTART;
-    }
+	if (strcmp(*(argv + optind), "status") == 0)
+	{
+		config.command = WDCTL_STATUS;
+	}
+	else if (strcmp(*(argv + optind), "stop") == 0)
+	{
+		config.command = WDCTL_STOP;
+	}
+	else if (strcmp(*(argv + optind), "reset") == 0)
+	{
+		config.command = WDCTL_KILL;
+		if ((argc - (optind + 1)) <= 0)
+		{
+			fprintf(stderr, "wdctl: Error: You must specify an IP "
+					"or a Mac address to reset\n");
+			usage();
+			exit(1);
+		}
+		config.param = strdup(*(argv + optind + 1));
+	}
+	else if (strcmp(*(argv + optind), "restart") == 0)
+	{
+		config.command = WDCTL_RESTART;
+	}
+	else if (strcmp(*(argv + optind), "id") == 0)
+	{
+		config.command = WDCTL_NODEID;
+	}
 	 else
 	 {
-	    fprintf(stderr, "wdctl: Error: Invalid command \"%s\"\n", *(argv + optind));
-	    usage();
-	    exit(1);
-    }
+		fprintf(stderr, "wdctl: Error: Invalid command \"%s\"\n", *(argv + optind));
+		usage();
+		exit(1);
+	}
 }
 
 static int
@@ -144,8 +148,8 @@ connect_to_server(const char *sock_name)
 	sa_un.sun_family = AF_UNIX;
 	strncpy(sa_un.sun_path, sock_name, (sizeof(sa_un.sun_path) - 1));
 
-	if (connect(sock, (struct sockaddr *)&sa_un, 
-			strlen(sa_un.sun_path) + sizeof(sa_un.sun_family))) {
+	if (connect(sock, (struct sockaddr *)&sa_un, strlen(sa_un.sun_path) + sizeof(sa_un.sun_family)))
+	{
 		fprintf(stderr, "wdctl: wifidog probably not started (Error: %s)\n", strerror(errno));
 		exit(1);
 	}
@@ -160,11 +164,12 @@ send_request(int sock, const char *request)
         ssize_t written;
 		
 	len = 0;
-	while (len != strlen(request)) {
+	while (len != strlen(request))
+	{
 		written = write(sock, (request + len), strlen(request) - len);
-		if (written == -1) {
-			fprintf(stderr, "Write to wifidog failed: %s\n",
-					strerror(errno));
+		if (written == -1)
+		{
+			fprintf(stderr, "Write to wifidog failed: %s\n", strerror(errno));
 			exit(1);
 		}
 		len += written;
@@ -187,7 +192,8 @@ wdctl_status(void)
 
 	len = send_request(sock, request);
 	
-	while ((len = read(sock, buffer, sizeof(buffer))) > 0) {
+	while ((len = read(sock, buffer, sizeof(buffer))) > 0)
+	{
 		buffer[len] = '\0';
 		printf("%s", buffer);
 	}
@@ -210,7 +216,8 @@ wdctl_stop(void)
 
 	len = send_request(sock, request);
 	
-	while ((len = read(sock, buffer, sizeof(buffer))) > 0) {
+	while ((len = read(sock, buffer, sizeof(buffer))) > 0)
+	{
 		buffer[len] = '\0';
 		printf("%s", buffer);
 	}
@@ -238,18 +245,23 @@ wdctl_reset(void)
 	
 	len = 0;
 	memset(buffer, 0, sizeof(buffer));
-	while ((len < sizeof(buffer)) && ((rlen = read(sock, (buffer + len),
-				(sizeof(buffer) - len))) > 0)){
+	while((len < sizeof(buffer)) &&
+			((rlen = read(sock, (buffer + len),	(sizeof(buffer) - len))) > 0))
+	{
 		len += rlen;
 	}
 
-	if (strcmp(buffer, "Yes") == 0) {
+	if (strcmp(buffer, "Yes") == 0)
+	{
 		printf("Connection %s successfully reset.\n", config.param);
-	} else if (strcmp(buffer, "No") == 0) {
+	}
+	else if (strcmp(buffer, "No") == 0)
+	{
 		printf("Connection %s was not active.\n", config.param);
-	} else {
-		fprintf(stderr, "wdctl: Error: WiFiDog sent an abnormal "
-				"reply.\n");
+	}
+	else
+	{
+		fprintf(stderr, "wdctl: Error: WiFiDog sent an abnormal " "reply.\n");
 	}
 
 	shutdown(sock, 2);
@@ -279,6 +291,34 @@ wdctl_restart(void)
 	close(sock);
 }
 
+
+static void
+wdctl_getid(void)
+{
+	int	sock;
+	char	buffer[64];		/** recv node id */
+	char	request[16];
+	int	len;
+
+	sock = connect_to_server(config.socket);
+
+	strncpy(request, "id\r\n\r\n", 10);
+
+	len = send_request(sock, request);
+
+	while ((len = read(sock, buffer, sizeof(buffer))) > 0)
+	{
+		buffer[len] = '\0';
+		printf("%s", buffer);
+	}
+
+	shutdown(sock, 2);
+	close(sock);
+}
+
+
+
+
 int
 main(int argc, char **argv)
 {
@@ -302,6 +342,10 @@ main(int argc, char **argv)
 		
 	case WDCTL_RESTART:
 		wdctl_restart();
+		break;
+
+	case WDCTL_NODEID:
+		wdctl_getid();
 		break;
 
 	default:

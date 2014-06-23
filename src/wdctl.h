@@ -9,6 +9,7 @@
 #define WDCTL_STOP		2
 #define WDCTL_KILL		3
 #define WDCTL_RESTART	4
+#define WDCTL_NODEID		5  /** Get node id */
 
 typedef struct {
 	char	*socket;
