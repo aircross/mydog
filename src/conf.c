@@ -1216,7 +1216,7 @@ digits(unsigned int number)
 
 	while(number != 0)
 	{
-		number %= 10;
+		number /= 10;
 		digits++;
 	}
 
