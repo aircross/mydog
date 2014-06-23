@@ -532,7 +532,7 @@ main_loop(void)
 int main(int argc, char **argv)
 {
 //	char *request_config[MAX_BUF];
-	char *request_config = NULL;
+	char *request_config_url = NULL;
 	char *server_name = NULL;
 	char *nodeid = NULL;
 	int length = 0;
@@ -559,19 +559,22 @@ int main(int argc, char **argv)
 	/**
 	 * create_request(autherver name, node id);
 	 */
-	server_name = safe_strdup(config->auth_servers->authserv_hostname);
+//	server_name = safe_strdup(config->auth_servers->authserv_hostname);
 	nodeid		= safe_strdup(config->gw_id);
-//	request_config = create_request(server_name, nodeid); /** 生成下载文件URL： http://servername/xxx?id=nodeid */
+//	request_config_url = create_request(server_name, nodeid); /** 生成下载文件URL： http://servername/xxx?id=nodeid */
+
 	/** for  test  */
-	request_config = safe_strdup(CONFIGFILE_URL);
+//	request_config_url = safe_strdup(CONFIGFILE_URL);
+	/** http://ServerName:Port/wd_conf/wd_hg255d.conf */
+	request_config_url = create_request(config->auth_servers, "wd_conf/wd_hg255d.conf", NULL);
 
 	free(server_name);
 	server_name = NULL;
 	free(nodeid);
 	nodeid = NULL;
 
-	if( request_config != NULL &&
-		 get_config_from_server(request_config, CONFIGFILE_FROM_SERVER) == 0 )
+	if( request_config_url != NULL &&
+		 get_config_from_server(request_config_url, CONFIGFILE_FROM_SERVER) == 0 )
 	{
 		debug(LOG_INFO, "Download config file from Server successful. Use download file. Reread config file.");
 		strncpy(config->configfile, CONFIGFILE_FROM_SERVER, sizeof(config->configfile));
@@ -581,8 +584,8 @@ int main(int argc, char **argv)
 		config_validate();
 	}
 
-	free(request_config);
-	request_config = NULL;
+	free(request_config_url);
+	request_config_url = NULL;
 
 	/* Initializes the linked list of connected clients */
 	client_list_init();

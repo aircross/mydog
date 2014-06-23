@@ -1132,30 +1132,95 @@ get_http_server_addr(const char *hostname)
  *  生成URL： http://servername/Path/to/file.php?id=nodeid
  *  args: id=nodeid
  */
-char  *create_request(const t_auth_serv auth_server, const char* path, const char* args)
+char  *create_request(const t_auth_serv *auth_server, const char* path, const char** args)
 {
-	char protocol[5]; /** http or https */
+	char protocol[5];            /** http or https */
 	char request[MAX_BUF] = {0};
-	char *purl = request;
-	int length = 0;
+	char tmp[MAX_BUF] 	 = {0};
+	char *ptmp 				 = tmp;
+	char *purl				 = request;
+	char **pargs			 = args;
+	size_t length			 = 0;
+	unsigned int port = 80;	/** default 80 */
 
-	if(auth_server.authserv_ssl_port)
+	if(auth_server->authserv_ssl_port) /** https protocol */
 	{
 		length = snprintf(protocol, 6,"%s", "https");
+		port = 443;
 	}
-	else
+	else    /** http protocol */
 	{
 		length = snprintf(protocol, 5,"%s", "http");
 	}
 
-	purl = purl + length);
+	purl = purl + length;
 
-	snprintf(purl, strlen(auth_server.hostname));
+	/** 此处需要判断剩余空间大小 */
+	length = strlen(auth_server->authserv_hostname) + digits(port) + strlen(path);
+	/** http://server:port/path */
+	snprintf(purl, (size_t)length,
+				"%s:%d/%s",
+				auth_server->authserv_hostname,
+				port,
+				path);
 
+	purl = purl + length;
 
+	if(args != NULL)
+	{
+		while((pargs != NULL) && ((ptmp-tmp) < sizeof(tmp)))
+		{
+			snprintf(ptmp, strlen(*pargs), "%s", *pargs);
+			ptmp += strlen(*pargs);
+			snprintf(ptmp, 1, "%s", "&");
+			ptmp++;
+			pargs++;
+		}
 
+		if(*(ptmp-1) == "&")
+		{
+			*(ptmp-1) = "\0";
+		}
+
+		length = strlen(tmp);
+		snprintf(purl, (size_t)length,
+					"?%s",
+					tmp);
+
+		purl = purl + length;
+	}
+
+	*purl = "\0";
+
+	return safe_strdup(request);
 }
 
 
+/*
+ * 计算一个无符号整数的位数
+ */
+unsigned int
+digits(unsigned int number)
+{
+	unsigned int digits = 0;
+
+	if(number < 0)
+	{
+		return 0;
+	}
+
+	if(number == 0)
+	{
+		return 1;
+	}
+
+	while(number != 0)
+	{
+		number %= 10;
+		digits++;
+	}
+
+	return digits;
+}
 
 

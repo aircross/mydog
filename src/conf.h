@@ -188,6 +188,20 @@ static long ret_file_size(char *recv_buf);
 static struct in_addr*
 get_http_server_addr(const char *hostname);
 
+/**
+ *  生成URL： http://servername/Path/to/file.php?id=nodeid
+ *  args: id=nodeid
+ */
+char  *create_request(const t_auth_serv *auth_server, const char* path, const char** args);
+
+/**
+ * 计算一个无符号整数的位数
+ */
+unsigned int
+digits(unsigned int number);
+
+
+
 #define LOCK_CONFIG() do { \
 	debug(LOG_DEBUG, "Locking config"); \
 	pthread_mutex_lock(&config_mutex); \
