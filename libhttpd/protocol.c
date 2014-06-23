@@ -98,10 +98,9 @@ int _httpd_readChar(request *r, char *cp)
 
 int _httpd_readLine(request *r, char *destBuf, int len)
 {
-	char	curChar；
-	char  *dst  = destBuf;
-	int	count = 0;
-
+	char curChar;
+	char *dst = destBuf;
+	int  count = 0;
 	while(count < len)
 	{
 		if (_httpd_readChar(r, &curChar) < 1)

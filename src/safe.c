@@ -13,31 +13,37 @@
 /* From gateway.c */
 extern httpd * webserver;
 
-void * safe_malloc (size_t size) {
+void * safe_malloc (size_t size)
+{
 	void * retval = NULL;
 	retval = malloc(size);
-	if (!retval) {
+	if (!retval)
+	{
 		debug(LOG_CRIT, "Failed to malloc %d bytes of memory: %s.  Bailing out", size, strerror(errno));
 		exit(1);
 	}
 	return (retval);
 }
 
-char * safe_strdup(const char *s) {
+char * safe_strdup(const char *s)
+{
 	char * retval = NULL;
-	if (!s) {
+	if (!s)
+	{
 		debug(LOG_CRIT, "safe_strdup called with NULL which would have crashed strdup. Bailing out");
 		exit(1);
 	}
 	retval = strdup(s);
-	if (!retval) {
+	if (!retval)
+	{
 		debug(LOG_CRIT, "Failed to duplicate a string: %s.  Bailing out", strerror(errno));
 		exit(1);
 	}
 	return (retval);
 }
 
-int safe_asprintf(char **strp, const char *fmt, ...) {
+int safe_asprintf(char **strp, const char *fmt, ...)
+{
 	va_list ap;
 	int retval;
 
@@ -48,29 +54,35 @@ int safe_asprintf(char **strp, const char *fmt, ...) {
 	return (retval);
 }
 
-int safe_vasprintf(char **strp, const char *fmt, va_list ap) {
+int safe_vasprintf(char **strp, const char *fmt, va_list ap)
+{
 	int retval;
 
 	retval = vasprintf(strp, fmt, ap);
 
-	if (retval == -1) {
+	if (retval == -1)
+	{
 		debug(LOG_CRIT, "Failed to vasprintf: %s.  Bailing out", strerror(errno));
 		exit (1);
 	}
 	return (retval);
 }
 
-pid_t safe_fork(void) {
+pid_t safe_fork(void)
+{
 	pid_t result;
 	result = fork();
 
-	if (result == -1) {
+	if (result == -1)
+	{
 		debug(LOG_CRIT, "Failed to fork: %s.  Bailing out", strerror(errno));
 		exit (1);
 	}
-	else if (result == 0) {
+	else if (result == 0)
+	{
 		/* I'm the child - do some cleanup */
-		if (webserver) {
+		if (webserver)
+		{
 			close(webserver->serverSock);
 			webserver = NULL;
 		}

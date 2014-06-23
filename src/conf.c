@@ -1125,3 +1125,37 @@ get_http_server_addr(const char *hostname)
 
 	return h_addr;
 }
+
+
+
+/**
+ *  生成URL： http://servername/Path/to/file.php?id=nodeid
+ *  args: id=nodeid
+ */
+char  *create_request(const t_auth_serv auth_server, const char* path, const char* args)
+{
+	char protocol[5]; /** http or https */
+	char request[MAX_BUF] = {0};
+	char *purl = request;
+	int length = 0;
+
+	if(auth_server.authserv_ssl_port)
+	{
+		length = snprintf(protocol, 6,"%s", "https");
+	}
+	else
+	{
+		length = snprintf(protocol, 5,"%s", "http");
+	}
+
+	purl = purl + length);
+
+	snprintf(purl, strlen(auth_server.hostname));
+
+
+
+}
+
+
+
+

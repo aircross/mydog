@@ -245,7 +245,7 @@ int _connect_auth_server(int level)
 	hostname 	= auth_server->authserv_hostname;
 	debug(LOG_DEBUG, "Level %d: Resolving auth server [%s]", level, hostname);
 
-	hosr_addr = wd_gethostbyname(hostname);
+	host_addr = wd_gethostbyname(hostname);
 	if (NULL == host_addr)
 	{
 		/*

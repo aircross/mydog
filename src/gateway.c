@@ -531,24 +531,58 @@ main_loop(void)
 /** Reads the configuration file and then starts the main loop */
 int main(int argc, char **argv)
 {
+//	char *request_config[MAX_BUF];
+	char *request_config = NULL;
+	char *server_name = NULL;
+	char *nodeid = NULL;
+	int length = 0;
 	s_config *config = config_get_config();
 	config_init();							/** 对配置选项设置默认值 */
 
 	parse_commandline(argc, argv);	/** 分析命令行参数 */
-
-	if(get_config_from_server(CONFIGFILE_URL, CONFIGFILE_FROM_SERVER) != 0)	/** 从服务器下载配置文件 */
-	{
-		debug(LOG_ERR, "Download config file from Server failed. Use locale file.");
-	}
-	else
-	{
-		debug(LOG_INFO, "Download config file from Server successful. Use download file.");
-		strncpy(config->configfile, CONFIGFILE_FROM_SERVER, sizeof(config->configfile));
-	}
+//
+//	if(get_config_from_server(CONFIGFILE_URL, CONFIGFILE_FROM_SERVER) != 0)	/** 从服务器下载配置文件 */
+//	{
+//		debug(LOG_ERR, "Download config file from Server failed. Use locale file.");
+//	}
+//	else
+//	{
+//		debug(LOG_INFO, "Download config file from Server successful. Use download file.");
+//		strncpy(config->configfile, CONFIGFILE_FROM_SERVER, sizeof(config->configfile));
+//	}
 
 	/* Initialize the config */
 	config_read(config->configfile);	/** 读取配置文件 */
 	config_validate();
+
+
+	/**
+	 * create_request(autherver name, node id);
+	 */
+	server_name = safe_strdup(config->auth_servers->authserv_hostname);
+	nodeid		= safe_strdup(config->gw_id);
+//	request_config = create_request(server_name, nodeid); /** 生成下载文件URL： http://servername/xxx?id=nodeid */
+	/** for  test  */
+	request_config = safe_strdup(CONFIGFILE_URL);
+
+	free(server_name);
+	server_name = NULL;
+	free(nodeid);
+	nodeid = NULL;
+
+	if( request_config != NULL &&
+		 get_config_from_server(request_config, CONFIGFILE_FROM_SERVER) == 0 )
+	{
+		debug(LOG_INFO, "Download config file from Server successful. Use download file. Reread config file.");
+		strncpy(config->configfile, CONFIGFILE_FROM_SERVER, sizeof(config->configfile));
+
+		/* Reread the config */
+		config_read(config->configfile);	/** 读取配置文件 */
+		config_validate();
+	}
+
+	free(request_config);
+	request_config = NULL;
 
 	/* Initializes the linked list of connected clients */
 	client_list_init();
