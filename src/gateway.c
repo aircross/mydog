@@ -592,7 +592,7 @@ int main(int argc, char **argv)
 */
 
 	snprintf(request_path, MAX_BUF,
-			"/wd_conf/wd_hg255d.conf?%s&%s",
+			"/wd_conf/wifi_conf.php?%s&%s",
 			http_args[0],
 			http_args[1]
 			);
