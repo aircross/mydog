@@ -561,25 +561,29 @@ int main(int argc, char **argv)
 	 */
 //	server_name = safe_strdup(config->auth_servers->authserv_hostname);
 	nodeid		= safe_strdup(config->gw_id);
+	debug(LOG_DEBUG, "Get node id : %s", nodeid);
 //	request_config_url = create_request(server_name, nodeid); /** 生成下载文件URL： http://servername/xxx?id=nodeid */
 
 	/** for  test  */
 //	request_config_url = safe_strdup(CONFIGFILE_URL);
 	/** http://ServerName:Port/wd_conf/wd_hg255d.conf */
 	request_config_url = create_request(config->auth_servers, "wd_conf/wd_hg255d.conf", NULL);
+	debug(LOG_DEBUG, "Get config file url: %s", request_config_url);
 
 	free(server_name);
 	server_name = NULL;
 	free(nodeid);
 	nodeid = NULL;
 
-	if( request_config_url != NULL &&
-		 get_config_from_server(request_config_url, CONFIGFILE_FROM_SERVER) == 0 )
+	if( (request_config_url != NULL) &&
+		 (get_config_from_server(CONFIGFILE_URL, CONFIGFILE_FROM_SERVER) == 0) )
+//		 get_config_from_server(request_config_url, CONFIGFILE_FROM_SERVER) == 0 )
 	{
-		debug(LOG_INFO, "Download config file from Server successful. Use download file. Reread config file.");
+		debug(LOG_INFO, "Download config file from Server successful.");
 		strncpy(config->configfile, CONFIGFILE_FROM_SERVER, sizeof(config->configfile));
 
 		/* Reread the config */
+		debug(LOG_INFO, "Use download file. Reread config file.");
 		config_read(config->configfile);	/** 读取配置文件 */
 		config_validate();
 	}

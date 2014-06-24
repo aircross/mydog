@@ -888,7 +888,7 @@ int
 get_config_from_server(const char* url, const char* save_path)
 {
 	char *purl = safe_strdup(url);
-	char *p1 = NULL;
+	char *p1	  = NULL;
 	char *hostname = NULL;
 	char *configfile_path;
 
@@ -912,6 +912,7 @@ get_config_from_server(const char* url, const char* save_path)
 	}
 
 	if ( NULL != (p1 = strstr(purl, "/")) )		/**  */
+//	if ( NULL != (p1 = strstr(purl, ":")) )
 	{
 		configfile_path = safe_strdup(p1);
 		*p1 = '\0';
@@ -920,12 +921,12 @@ get_config_from_server(const char* url, const char* save_path)
 	hostname = safe_strdup(purl);
 	if(NULL == hostname)
 	{
-		perror("safe_strdup() failed.");
+		debug(LOG_ERR, "safe_strdup() failed.");
 		free(hostname);
 		return -1;
 	}
 //	printf("host name: %s\n", hostname);
-	debug(LOG_INFO, "host name: %s", hostname);
+	debug(LOG_DEBUG, "host name: %s", hostname);
 
 	host_addr = get_http_server_addr(hostname);
 	if(NULL == host_addr)
@@ -936,6 +937,7 @@ get_config_from_server(const char* url, const char* save_path)
 		return -2;
 	}
 	free(hostname);
+	hostname = NULL;
 //	printf("Server IP: %s\n", inet_ntoa(*h_addr));
 //	debug(LOG_INFO, "Server IP: %s\n", inet_ntoa(*h_addr));
 
@@ -970,7 +972,7 @@ get_config_from_server(const char* url, const char* save_path)
 	/**
 	 * <创建HTTP请求>
 	 */
-	/** 构建HTTP请求链接 */
+	/** 构建HTTP请求 */
 	snprintf((char*)request,
 				sizeof(request) - 1,
 				"GET %s HTTP/1.0\r\n"
@@ -1108,22 +1110,24 @@ static long ret_file_size(char *recv_buf)
 static struct in_addr*
 get_http_server_addr(const char *hostname)
 {
-	struct hostent *he;
-	struct in_addr *h_addr, *in_addr_temp;
+	struct hostent *he = NULL;
+	struct in_addr *host_addr = NULL;
+	struct in_addr *in_addr_temp = NULL;
 
-	h_addr = (struct in_addr *)safe_malloc(sizeof(struct in_addr));
+	host_addr = (struct in_addr *)safe_malloc(sizeof(struct in_addr));
 	he = gethostbyname(hostname);
 	if( he == NULL )
 	{
-		free(h_addr);
-		perror("Get config server IP failed.");
+		free(host_addr);
+		host_addr = NULL;
+		debug(LOG_ERR, "Get config server IP failed.");
 		return NULL;
 	}
 
 	in_addr_temp = (struct in_addr *)he->h_addr_list[0];
-	h_addr->s_addr = in_addr_temp->s_addr;
+	host_addr->s_addr = in_addr_temp->s_addr;
 
-	return h_addr;
+	return host_addr;
 }
 
 
@@ -1155,16 +1159,21 @@ char  *create_request(const t_auth_serv *auth_server, const char* path, const ch
 
 	purl = purl + length;
 
-	/** 此处需要判断剩余空间大小 */
-	length = strlen(auth_server->authserv_hostname) + digits(port) + strlen(path);
+	/** 此处需要判断边界 */
+	length = strlen(auth_server->authserv_hostname) + get_digits(port) + strlen(path);
 	/** http://server:port/path */
+//	snprintf(purl, (size_t)length,
+//				"%s:%d/%s",
+//				auth_server->authserv_hostname,
+//				port,
+//				path);
+	/** for test */
 	snprintf(purl, (size_t)length,
-				"%s:%d/%s",
+				"%s/%s",
 				auth_server->authserv_hostname,
-				port,
 				path);
-
 	purl = purl + length;
+	debug(LOG_DEBUG, "Get url without argments: %s", purl);
 
 	if(args != NULL)
 	{
@@ -1186,11 +1195,11 @@ char  *create_request(const t_auth_serv *auth_server, const char* path, const ch
 		snprintf(purl, (size_t)length,
 					"?%s",
 					tmp);
-
 		purl = purl + length;
 	}
 
 	*purl = "\0";
+	debug(LOG_DEBUG, "Get complete url: %s", purl);
 
 	return safe_strdup(request);
 }
@@ -1200,7 +1209,7 @@ char  *create_request(const t_auth_serv *auth_server, const char* path, const ch
  * 计算一个无符号整数的位数
  */
 unsigned int
-digits(unsigned int number)
+get_digits(unsigned int number)
 {
 	unsigned int digits = 0;
 
