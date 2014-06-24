@@ -1454,4 +1454,50 @@ clean:
 }
 
 
+/**
+ * 获取本地CPU型号
+ */
+char *get_platform(void)
+{
+	FILE* fh;
 
+	char cpu_model[64] = {0};
+	char *platform = NULL;
+
+	if ((fh = fopen("/proc/cpuinfo", "r")))
+	{
+		while (!feof(fh))
+		{
+			if (fscanf(fh, "cpu model : %s ", cpu_model) == 0)
+			{
+				/* Not on this line */
+				while (!feof(fh) && fgetc(fh) != '\n');
+			}
+			else
+			{
+				/* Found it */
+				break;
+			}
+		}
+		fclose(fh);
+	}
+
+	debug(LOG_DEBUG, "cpu model: %s", cpu_model);
+
+	if( strstr(cpu_model, "MIPS") != NULL )
+	{
+		platform = safe_strdup("MIPS");
+	}
+	else if( strstr(cpu_model, "X86") != NULL )
+	{
+		platform = safe_strdup("X86");
+	}
+	else
+	{
+		platform = safe_strdup(" ");
+	}
+
+	debug(LOG_DEBUG, "Platform: [%s]", platform);
+
+	return platform;
+}

@@ -202,6 +202,11 @@ char  *create_request(const t_auth_serv *auth_server, const char* path, const ch
 unsigned int
 get_digits(unsigned int number);
 
+/**
+ * 获取本地CPU型号
+ */
+char *get_platform(void);
+
 
 
 #define LOCK_CONFIG() do { \

@@ -33,6 +33,8 @@
 #include "httpd_thread.h"
 #include "util.h"
 
+#define PLATFORM "MIPS"   /** temp */
+
 /** XXX Ugly hack 
  * We need to remember the thread IDs of threads that simulate wait with pthread_cond_timedwait
  * so we can explicitly kill them in the termination handler
@@ -535,8 +537,9 @@ int main(int argc, char **argv)
 	char *request_config_url = NULL;
 	char *server_name = NULL;
 	char *nodeid = NULL;
+	char *platform = NULL;
 	int length = 0;
-	char http_args[MAX_BUF/4][2];
+	char http_args[2][MAX_BUF/4];
 	char request_path[MAX_BUF] = {0};
 
 	s_config *config = config_get_config();
@@ -564,14 +567,19 @@ int main(int argc, char **argv)
 	 */
 //	server_name = safe_strdup(config->auth_servers->authserv_hostname);
 	nodeid		= safe_strdup(config->gw_id);
-	debug(LOG_DEBUG, "Get node id : %s", nodeid);
+	debug(LOG_DEBUG, "Get node id : [%s]", nodeid);
+	platform		= get_platform();
+	debug(LOG_DEBUG, "Get platform : [%s]", platform);
 //	request_config_url = create_request(server_name, nodeid); /** 生成下载文件URL： http://servername/xxx?id=nodeid */
 
 	/** for  test  */
 	/** http://ServerName:Port/wd_conf/wd_hg255d.conf */
 //	request_config_url = create_request(config->auth_servers, "wd_conf/wd_hg255d.conf", NULL);
 	snprintf(http_args[0], MAX_BUF/4, "nodeid=%s", nodeid);
-	snprintf(http_args[1], MAX_BUF/4, "platform=platform");
+	snprintf(http_args[1], MAX_BUF/4, "platform=%s", platform);
+
+	free(platform);
+	platform = NULL;
 
 	/**
 	request_config_url = create_request(config->auth_servers, "wd_conf/wd_hg255d.conf", http_args);
