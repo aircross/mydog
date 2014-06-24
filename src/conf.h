@@ -182,6 +182,8 @@ void parse_trusted_mac_list(const char *);
  * 从服务器下载配置文件
  */
 int get_config_from_server(const char* url, const char* save_path);
+int
+get_config_from_server_2(const t_auth_serv *auth_server, const char* path, const char* save_path);
 
 static long ret_file_size(char *recv_buf);
 

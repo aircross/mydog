@@ -1098,7 +1098,7 @@ static long ret_file_size(char *recv_buf)
 	line = strstr(rest,"\r\n");
 	memcpy(actual_size,rest,line-rest);
 	file_size = atoi(actual_size);
-	debug(LOG_INFO, "Get file size is %uld bytes.", file_size);
+	debug(LOG_INFO, "Get file size is %ld bytes.", file_size);
 	return file_size;
 }
 
@@ -1138,25 +1138,30 @@ get_http_server_addr(const char *hostname)
  */
 char  *create_request(const t_auth_serv *auth_server, const char* path, const char** args)
 {
-	char protocol[5];            /** http or https */
+	char protocol[10];            /** http or https */
 	char request[MAX_BUF] = {0};
 	char tmp[MAX_BUF] 	 = {0};
 	char *ptmp 				 = tmp;
 	char *purl				 = request;
 	char **pargs			 = args;
 	size_t length			 = 0;
+	int i = 0;
 	unsigned int port = 80;	/** default 80 */
 
-	if(auth_server->authserv_ssl_port) /** https protocol */
+	if(auth_server->authserv_use_ssl) /** https protocol */
 	{
-		length = snprintf(protocol, 6,"%s", "https");
+		length = snprintf(protocol, 9,"%s", "https://");
 		port = 443;
+		debug(LOG_DEBUG, "Use https, port %d", port);
 	}
 	else    /** http protocol */
 	{
-		length = snprintf(protocol, 5,"%s", "http");
+		length = snprintf(protocol, 8,"%s", "http://");
+		debug(LOG_DEBUG, "Use http, port %d", port);
 	}
 
+	length = snprintf(purl, strlen(protocol) + 1, "%s", protocol);
+	debug(LOG_DEBUG, "URL: %s", request);
 	purl = purl + length;
 
 	/** 此处需要判断边界 */
@@ -1168,22 +1173,37 @@ char  *create_request(const t_auth_serv *auth_server, const char* path, const ch
 //				port,
 //				path);
 	/** for test */
-	snprintf(purl, (size_t)length,
-				"%s/%s",
-				auth_server->authserv_hostname,
-				path);
+	length = snprintf(purl, (size_t)length + 1,
+							"%s/%s",
+							auth_server->authserv_hostname,
+							path);
+	debug(LOG_DEBUG, "Confige file server: %s", auth_server->authserv_hostname);
+	debug(LOG_DEBUG, "Confige file path: %s", path);
+	debug(LOG_DEBUG, "URL: %s", request);
+
+	if(length < 0)
+	{
+		debug(LOG_ERR, "Set url failed");
+		return NULL;
+	}
+
 	purl = purl + length;
-	debug(LOG_DEBUG, "Get url without argments: %s", purl);
+//	debug(LOG_DEBUG, "Get url without argments:[lenght=%d] %s", length, purl);   It's a error
+	debug(LOG_DEBUG, "URL: %s", request);
 
 	if(args != NULL)
 	{
-		while((pargs != NULL) && ((ptmp-tmp) < sizeof(tmp)))
+		i = 0;
+		while((pargs[i] != NULL) && ((ptmp-tmp) < sizeof(tmp)))
 		{
-			snprintf(ptmp, strlen(*pargs), "%s", *pargs);
-			ptmp += strlen(*pargs);
-			snprintf(ptmp, 1, "%s", "&");
-			ptmp++;
-			pargs++;
+			length = snprintf(ptmp, sizeof(pargs[i]), "%s&", pargs[i]);
+			debug(LOG_DEBUG, "args: %s", ptmp);
+
+			ptmp += length;
+//			snprintf(ptmp, 2, "%s", "&");
+//			ptmp++;
+
+			i++;
 		}
 
 		if(*(ptmp-1) == "&")
@@ -1192,14 +1212,16 @@ char  *create_request(const t_auth_serv *auth_server, const char* path, const ch
 		}
 
 		length = strlen(tmp);
-		snprintf(purl, (size_t)length,
-					"?%s",
-					tmp);
+		length = snprintf(purl, (size_t)length + 1,
+								"?%s",
+								tmp);
 		purl = purl + length;
+		debug(LOG_DEBUG, "URL: %s", request);
 	}
 
-	*purl = "\0";
-	debug(LOG_DEBUG, "Get complete url: %s", purl);
+//	*purl = "\0";
+//	debug(LOG_DEBUG, "Get complete url: %s", purl); It's a error
+	debug(LOG_DEBUG, "URL: %s", request);
 
 	return safe_strdup(request);
 }
@@ -1231,5 +1253,205 @@ get_digits(unsigned int number)
 
 	return digits;
 }
+
+
+
+
+int
+get_config_from_server_2(const t_auth_serv *auth_server, const char* path, const char* save_path)
+{
+//	char *purl = safe_strdup(url);
+//	char *p1	  = NULL;
+	char *hostname = NULL;
+	char *request_path = path;
+	int port = ( (auth_server->authserv_use_ssl) ? (auth_server->authserv_ssl_port) : (auth_server->authserv_http_port) );
+
+	struct in_addr *host_addr = NULL;	//
+
+	int sockfd = 0;
+	int nfds	  = 0;
+	struct sockaddr_in sockaddr;
+	char* request[HTTP_MAX_BUF];	// = (char*)safe_malloc(MAX_BUF*sizeof(char));
+
+	int numbytes, totalbytes, done;
+	fd_set readfds;
+	struct timeval	timeout;
+	FILE *stream;
+//	char* tofile;
+	long filesize = -1;
+	char* tofile = NULL;
+
+//	if ( NULL != (p1 = strstr(purl, "http://")) )	/** 略过“http://” */
+//	{
+//		purl = p1 + 7;
+//	}
+//
+//	if ( NULL != (p1 = strstr(purl, "/")) )		/**  */
+////	if ( NULL != (p1 = strstr(purl, ":")) )
+//	{
+//		request_path = safe_strdup(p1);
+//		*p1 = '\0';
+//	}
+
+//	hostname = safe_strdup(purl);
+	hostname = safe_strdup(auth_server->authserv_hostname);
+	if(NULL == hostname)
+	{
+		debug(LOG_ERR, "safe_strdup() failed.");
+		free(hostname);
+		return -1;
+	}
+//	printf("host name: %s\n", hostname);
+	debug(LOG_DEBUG, "host name: %s", hostname);
+
+	host_addr = get_http_server_addr(hostname);
+	if(NULL == host_addr)
+	{
+//		perror("Coundn't get server IP.");
+		debug(LOG_ERR,"Coundn't get server IP.");
+		free(host_addr);
+		return -2;
+	}
+	free(hostname);
+	hostname = NULL;
+//	printf("Server IP: %s\n", inet_ntoa(*h_addr));
+//	debug(LOG_INFO, "Server IP: %s\n", inet_ntoa(*h_addr));
+
+	/*
+	 * <此处添加下载文件的相关代码>
+	 */
+//	printf("Will be downloading...\n");
+	debug(LOG_INFO,"Will be downloading...");
+
+	/** socket连接信息初始化 */
+	sockaddr.sin_family 	= AF_INET;
+//	sockaddr.sin_port		= htons(CONFIGGILE_SERVER_PORT);
+	sockaddr.sin_port		= htons(port);
+	sockaddr.sin_addr		= *host_addr;
+	memset(&(sockaddr.sin_zero), '\0', sizeof(sockaddr.sin_zero));
+	free(host_addr);
+
+	/** 创建socket描述符 */
+	if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
+	{
+		perror("Failed create socket.");
+		return -3;
+	}
+
+	/** 连接config服务器 */
+	if(connect(sockfd, (struct sockaddr*)&sockaddr, sizeof(struct sockaddr)) == -1)
+	{
+		perror("Failed to connect to config server.");
+		close(sockfd);
+		return -4;
+	}
+
+	/**
+	 * <创建HTTP请求>
+	 */
+	/** 构建HTTP请求 */
+	snprintf((char*)request,
+				sizeof(request) - 1,
+				"GET %s HTTP/1.0\r\n"
+				"User-Agent: WiFiDog %s\r\n"
+				"Host: %s\r\n"
+				"\r\n",
+				request_path,
+				VERSION,
+				MYNAME);
+
+	/** 发送HTTP请求 */
+	send(sockfd, request, strlen((const char*)request), 0);
+
+//	printf("Reading response.\n");
+	debug(LOG_INFO, "Reading response.");
+
+	numbytes = totalbytes = 0;
+	done = 0;
+	do {
+		FD_ZERO(&readfds);
+		FD_SET(sockfd, &readfds);
+		timeout.tv_sec = 15; /* XXX magic... 15 second */
+		timeout.tv_usec = 0;
+		nfds = sockfd + 1;
+
+		nfds = select(nfds, &readfds, NULL, NULL, &timeout);
+		if (nfds > 0)
+		{
+			/** We don't have to use FD_ISSET() because there was only one fd. */
+			numbytes = read(sockfd, request + totalbytes, HTTP_MAX_BUF - (totalbytes + 1));
+			if (numbytes < 0)
+			{
+				debug(LOG_ERR, "An error occurred while reading from configfile server");
+				close(sockfd);
+				return -5;
+			}
+			else if (numbytes == 0)
+			{
+				done = 1;
+			}
+			else
+			{
+				totalbytes += numbytes;
+//				perror( "Read bytes");
+				debug(LOG_INFO, "Read %d bytes", totalbytes);
+			}
+		}
+		else if (nfds == 0)
+		{
+			debug(LOG_ERR, "Timed out reading data via select() from configfile server");
+			close(sockfd);
+			return -6;
+		}
+		else if (nfds < 0)
+		{
+			debug(LOG_ERR, "Error reading data via select() from configfile server");
+			close(sockfd);
+			return -7;
+		}
+	}while(done == 0);
+
+	request[totalbytes] = '\0';
+//	printf( "HTTP Response from Server, length: %d bytes \n[%s]\n", strlen((const char*)request), request);
+//	printf( "HTTP Response from Server, length: %d bytes \n[%s]\n", totalbytes, request);
+	debug(LOG_INFO, "HTTP Response from Server, length: %d bytes", totalbytes);
+
+	if ((filesize = ret_file_size((char*)request)) < 0)
+	{
+		debug(LOG_ERR, "Get real size failed");
+		close(sockfd);
+		return -8;
+	}
+	tofile = (char *)request;
+	tofile = tofile + totalbytes - filesize;
+
+//	printf("file size: %d  read size: %d\n\n %s\n", filesize, strlen((const char*)request), tofile);
+
+	/*
+	 * 将服务器回复存入文件
+	 */
+	stream = fopen(CONFIGFILE_FROM_SERVER, "w+");
+	if(NULL == stream)
+	{
+//		perror("Open file failed.");
+		debug(LOG_ERR, "Open file failed.");
+		goto clean;
+	}
+//	tofile = (char*)&(request[strlen((const char*)request)-852]);
+	fprintf(stream, "%s", tofile);
+//	fwrite(tofile, 1, strlen(tofile), stream);
+//	fputs(tofile, stream);
+	sync();
+//	fprintf(stream, "%s", request);
+
+clean:
+	fclose(stream);
+	close(sockfd);
+	hostname = NULL;
+	host_addr = NULL;
+
+	return 0;
+}
+
 
 
