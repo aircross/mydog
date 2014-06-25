@@ -15,7 +15,7 @@
 
 #include "wdctl.h"
 
-s_config config;
+wdctl_config_t config;
 
 static void usage(void);
 static void init_config(void);
@@ -318,6 +318,58 @@ wdctl_getid(void)
 
 
 
+static time_t
+get_wd_start_time(void)
+{
+	int	sock;
+	char	buffer[64];		/** recv start time */
+	char	request[16];
+	int	len;
+	time_t start_time;
+
+	sock = connect_to_server(config.socket);
+
+	strncpy(request, "start_time\r\n\r\n", 10);
+
+	len = send_request(sock, request);
+
+	while ((len = read(sock, buffer, sizeof(buffer))) > 0)
+	{
+		buffer[len] = '\0';
+		printf("%s", buffer);
+	}
+
+	shutdown(sock, 2);
+	close(sock);
+
+	start_time = strtol(buffer, NULL, 10);
+	if()
+
+	return start_time;
+}
+
+
+
+/**
+ * 定时检查配置文件，若有更新，重新启动WD
+ */
+void wdctl_chk_update()
+{
+	chk_time_t chk_time;
+
+
+	chk_time.last_get = get_wd_start_time();
+	chk_time.update	= get_conf_update_time();
+
+	if(chk_time.update > chk_time.last_get)
+	{
+		wdctl_restart();
+	}
+
+	request_server();
+}
+
+
 
 int
 main(int argc, char **argv)
@@ -346,6 +398,10 @@ main(int argc, char **argv)
 
 	case WDCTL_NODEID:
 		wdctl_getid();
+		break;
+
+	case WDCTL_CHK_UPDATE:
+		wdctl_chk_update();
 		break;
 
 	default:
