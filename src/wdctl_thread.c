@@ -40,6 +40,7 @@ static void wdctl_stop(int);
 static void wdctl_reset(int, const char *);
 static void wdctl_restart(int);
 static void wdctl_getid(int fd);
+static void wdctl_get_startime(int fd);
 
 /** Launches a thread that monitors the control socket for request
 @param arg Must contain a pointer to a string containing the Unix domain socket to open
@@ -237,7 +238,7 @@ wdctl_getid(int fd)
 }
 
 
-void
+static void
 wdctl_get_startime(int fd)
 {
 	char *startime = NULL;

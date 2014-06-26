@@ -50,9 +50,9 @@ char *get_nodeid();
 time_t get_startime();
 
 /*
- * @brief Get start time
+ * @brief Get start time to string
  */
-char* get_startime_str()
+char* get_startime_str(); /** 这里少了一个分号，造成conf.c 大量报错  ——。 */
 
 
 #define LOCK_GHBN() do { \

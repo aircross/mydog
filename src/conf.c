@@ -185,8 +185,7 @@ config_parse_token(const char *cp, const char *filename, int linenum)
 		if (strcasecmp(cp, keywords[i].name) == 0)
 			return keywords[i].opcode;
 
-	debug(LOG_ERR, "%s: line %d: Bad configuration option: %s",
-			filename, linenum, cp);
+	debug(LOG_ERR, "%s: line %d: Bad configuration option: %s",	filename, linenum, cp);
 	return oBadOption;
 }
 
@@ -883,7 +882,7 @@ mark_auth_server_bad(t_auth_serv *bad_server)
 //}
 
 
-//
+#if 0
 int
 get_config_from_server(const char* url, const char* save_path)
 {
@@ -1075,7 +1074,7 @@ clean:
 
 	return 0;
 }
-
+#endif
 
 static long ret_file_size(char *recv_buf)
 {
@@ -1470,13 +1469,11 @@ char *get_platform(void)
 		{
 			if (fscanf(fh, "cpu model : %s ", cpu_model) == 0)
 			{
-				/* Not on this line */
-				while (!feof(fh) && fgetc(fh) != '\n');
+				while (!feof(fh) && fgetc(fh) != '\n');  /* Not on this line */
 			}
 			else
 			{
-				/* Found it */
-				break;
+				break;  /* Found it */
 			}
 		}
 		fclose(fh);
