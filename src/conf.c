@@ -10,6 +10,7 @@
 
 #include <string.h>
 #include <ctype.h>
+#include <errno.h>
 
 #include "common.h"
 #include "safe.h"
@@ -23,22 +24,16 @@
 
 #include "util.h"
 
-/** @internal
- * Holds the current configuration of the gateway */
+/** @internal Holds the current configuration of the gateway */
 static s_config config;
 
-/**
- * Mutex for the configuration file, used by the auth_servers related
- * functions. */
+/** Mutex for the configuration file, used by the auth_servers related functions. */
 pthread_mutex_t config_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-/** @internal
- * A flag.  If set to 1, there are missing or empty mandatory parameters in the config
- */
+/** @internal A flag.  If set to 1, there are missing or empty mandatory parameters in the config */
 static int missing_parms;
 
-/** @internal
- The different configuration options */
+/** @internal The different configuration options */
 typedef enum {
 	oBadOption,
 	oDaemon,
@@ -75,8 +70,7 @@ typedef enum {
 	oProxyPort,
 } OpCodes;
 
-/** @internal
- The config file keywords for the different configuration options */
+/** @internal The config file keywords for the different configuration options */
 static const struct {
 	const char *name;
 	OpCodes opcode;
@@ -116,12 +110,12 @@ static const struct {
 	{ NULL,				oBadOption },
 };
 
-static void config_notnull(const void *parm, const char *parmname);
-static int parse_boolean_value(char *);
-static void parse_auth_server(FILE *, const char *, int *);
-static int _parse_firewall_rule(const char *ruleset, char *leftover);
-static void parse_firewall_ruleset(const char *, FILE *, const char *, int *);
-
+static int 		parse_boolean_value(char *);
+static int 		_parse_firewall_rule(const char *ruleset, char *leftover);
+static void 	config_notnull(const void *parm, const char *parmname);
+static void 	parse_auth_server(FILE *, const char *, int *);
+static void 	parse_firewall_ruleset(const char *, FILE *, const char *, int *);
+static long 	ret_file_size(char *recv_buf);
 static OpCodes config_parse_token(const char *cp, const char *filename, int linenum);
 
 /** Accessor for the current gateway configuration
@@ -839,7 +833,6 @@ config_notnull(const void *parm, const char *parmname)
 t_auth_serv *
 get_auth_server(void)
 {
-
 	/* This is as good as atomic */
 	return config.auth_servers;
 }
@@ -868,21 +861,12 @@ mark_auth_server_bad(t_auth_serv *bad_server)
 }
 
 
-
-
+#if 0
 /**
  * 从服务器下载配置文件
  * 默认： url = CONFIGFILE_URL
  *      save_path = CONFIGFILE_FROM_SERVER
  */
-//int get_config_from_server(const char* url, const char* save_path)
-//{
-//
-//	return 0;
-//}
-
-
-#if 0
 int
 get_config_from_server(const char* url, const char* save_path)
 {
@@ -1076,16 +1060,17 @@ clean:
 }
 #endif
 
-static long ret_file_size(char *recv_buf)
+static long
+ret_file_size(char *recv_buf)
 {
-	unsigned long file_size = 0;
+	long file_size = 0;
 	char *rest = NULL;
 	char *line = NULL;
 	char actual_size[HTTP_MAX_BUF] = {0} ;
 
 	if( NULL == recv_buf)
 	{
-		debug(LOG_ERR, "recv %s is NULL\n",recv_buf);
+		debug(LOG_ERR, "recv %s is NULL\n", recv_buf);
 		return -1;
 	}
 	if((strstr(recv_buf,"Content-Length")) == NULL)
@@ -1093,11 +1078,14 @@ static long ret_file_size(char *recv_buf)
 		debug(LOG_ERR, "Content-Length is NULL\n");
 		return -1;
 	}
+
 	rest = strstr(recv_buf,"Content-Length:")+strlen("Content-Length: ");
 	line = strstr(rest,"\r\n");
 	memcpy(actual_size,rest,line-rest);
 	file_size = atoi(actual_size);
+
 	debug(LOG_INFO, "Get file size is %ld bytes.", file_size);
+
 	return file_size;
 }
 
@@ -1135,95 +1123,95 @@ get_http_server_addr(const char *hostname)
  *  生成URL： http://servername/Path/to/file.php?id=nodeid
  *  args: id=nodeid
  */
-char  *create_request(const t_auth_serv *auth_server, const char* path, const char** args)
-{
-	char protocol[10];            /** http or https */
-	char request[MAX_BUF] = {0};
-	char tmp[MAX_BUF] 	 = {0};
-	char *ptmp 				 = tmp;
-	char *purl				 = request;
-	char **pargs			 = args;
-	size_t length			 = 0;
-	int i = 0;
-	unsigned int port = 80;	/** default 80 */
-
-	if(auth_server->authserv_use_ssl) /** https protocol */
-	{
-		length = snprintf(protocol, 9,"%s", "https://");
-		port = 443;
-		debug(LOG_DEBUG, "Use https, port %d", port);
-	}
-	else    /** http protocol */
-	{
-		length = snprintf(protocol, 8,"%s", "http://");
-		debug(LOG_DEBUG, "Use http, port %d", port);
-	}
-
-	length = snprintf(purl, strlen(protocol) + 1, "%s", protocol);
-	debug(LOG_DEBUG, "URL: %s", request);
-	purl = purl + length;
-
-	/** 此处需要判断边界 */
-	length = strlen(auth_server->authserv_hostname) + get_digits(port) + strlen(path);
-	/** http://server:port/path */
-//	snprintf(purl, (size_t)length,
-//				"%s:%d/%s",
-//				auth_server->authserv_hostname,
-//				port,
-//				path);
-	/** for test */
-	length = snprintf(purl, (size_t)length + 1,
-							"%s/%s",
-							auth_server->authserv_hostname,
-							path);
-	debug(LOG_DEBUG, "Confige file server: %s", auth_server->authserv_hostname);
-	debug(LOG_DEBUG, "Confige file path: %s", path);
-	debug(LOG_DEBUG, "URL: %s", request);
-
-	if(length < 0)
-	{
-		debug(LOG_ERR, "Set url failed");
-		return NULL;
-	}
-
-	purl = purl + length;
-//	debug(LOG_DEBUG, "Get url without argments:[lenght=%d] %s", length, purl);   It's a error
-	debug(LOG_DEBUG, "URL: %s", request);
-
-	if(args != NULL)
-	{
-		i = 0;
-		while((pargs[i] != NULL) && ((ptmp-tmp) < sizeof(tmp)))
-		{
-			length = snprintf(ptmp, sizeof(pargs[i]), "%s&", pargs[i]);
-			debug(LOG_DEBUG, "args: %s", ptmp);
-
-			ptmp += length;
-//			snprintf(ptmp, 2, "%s", "&");
-//			ptmp++;
-
-			i++;
-		}
-
-		if(*(ptmp-1) == "&")
-		{
-			*(ptmp-1) = "\0";
-		}
-
-		length = strlen(tmp);
-		length = snprintf(purl, (size_t)length + 1,
-								"?%s",
-								tmp);
-		purl = purl + length;
-		debug(LOG_DEBUG, "URL: %s", request);
-	}
-
-//	*purl = "\0";
-//	debug(LOG_DEBUG, "Get complete url: %s", purl); It's a error
-	debug(LOG_DEBUG, "URL: %s", request);
-
-	return safe_strdup(request);
-}
+//char  *create_request(const t_auth_serv *auth_server, const char* path, const char** args)
+//{
+//	char protocol[10];            /** http or https */
+//	char request[MAX_BUF] = {0};
+//	char tmp[MAX_BUF] 	 = {0};
+//	char *ptmp 				 = tmp;
+//	char *purl				 = request;
+//	char **pargs			 = args;
+//	size_t length			 = 0;
+//	int i = 0;
+//	unsigned int port = 80;	/** default 80 */
+//
+//	if(auth_server->authserv_use_ssl) /** https protocol */
+//	{
+//		length = snprintf(protocol, 9,"%s", "https://");
+//		port = 443;
+//		debug(LOG_DEBUG, "Use https, port %d", port);
+//	}
+//	else    /** http protocol */
+//	{
+//		length = snprintf(protocol, 8,"%s", "http://");
+//		debug(LOG_DEBUG, "Use http, port %d", port);
+//	}
+//
+//	length = snprintf(purl, strlen(protocol) + 1, "%s", protocol);
+//	debug(LOG_DEBUG, "URL: %s", request);
+//	purl = purl + length;
+//
+//	/** 此处需要判断边界 */
+//	length = strlen(auth_server->authserv_hostname) + get_digits(port) + strlen(path);
+//	/** http://server:port/path */
+////	snprintf(purl, (size_t)length,
+////				"%s:%d/%s",
+////				auth_server->authserv_hostname,
+////				port,
+////				path);
+//	/** for test */
+//	length = snprintf(purl, (size_t)length + 1,
+//							"%s/%s",
+//							auth_server->authserv_hostname,
+//							path);
+//	debug(LOG_DEBUG, "Confige file server: %s", auth_server->authserv_hostname);
+//	debug(LOG_DEBUG, "Confige file path: %s", path);
+//	debug(LOG_DEBUG, "URL: %s", request);
+//
+//	if(length < 0)
+//	{
+//		debug(LOG_ERR, "Set url failed");
+//		return NULL;
+//	}
+//
+//	purl = purl + length;
+////	debug(LOG_DEBUG, "Get url without argments:[lenght=%d] %s", length, purl);   It's a error
+//	debug(LOG_DEBUG, "URL: %s", request);
+//
+//	if(args != NULL)
+//	{
+//		i = 0;
+//		while((pargs[i] != NULL) && ((ptmp-tmp) < sizeof(tmp)))
+//		{
+//			length = snprintf(ptmp, sizeof(pargs[i]), "%s&", pargs[i]);
+//			debug(LOG_DEBUG, "args: %s", ptmp);
+//
+//			ptmp += length;
+////			snprintf(ptmp, 2, "%s", "&");
+////			ptmp++;
+//
+//			i++;
+//		}
+//
+//		if(*(ptmp-1) == "&")
+//		{
+//			*(ptmp-1) = "\0";
+//		}
+//
+//		length = strlen(tmp);
+//		length = snprintf(purl, (size_t)length + 1,
+//								"?%s",
+//								tmp);
+//		purl = purl + length;
+//		debug(LOG_DEBUG, "URL: %s", request);
+//	}
+//
+////	*purl = "\0";
+////	debug(LOG_DEBUG, "Get complete url: %s", purl); It's a error
+//	debug(LOG_DEBUG, "URL: %s", request);
+//
+//	return safe_strdup(request);
+//}
 
 
 /*
@@ -1259,40 +1247,26 @@ get_digits(unsigned int number)
 int
 get_config_from_server_2(const t_auth_serv *auth_server, const char* path, const char* save_path)
 {
-//	char *purl = safe_strdup(url);
-//	char *p1	  = NULL;
-	char *hostname = NULL;
-	char *request_path = path;
-	int port = ( (auth_server->authserv_use_ssl) ? (auth_server->authserv_ssl_port) : (auth_server->authserv_http_port) );
+	int  done		 =  0;
+	int  nfds	  	 =  0;
+	int  sockfd 	 =  0;
+	int  numbytes 	 =  0;
+	int  totalbytes =  0;
+	int  port		 = ((auth_server->authserv_use_ssl) ? (auth_server->authserv_ssl_port) : (auth_server->authserv_http_port));
+	long filesize	 = -1;
 
-	struct in_addr *host_addr = NULL;	//
+	char *tofile 					= NULL;
+	char *hostname 	 			= NULL;
+	char *request_path 			= path;
+	char request[HTTP_MAX_BUF] = {0};	// = (char*)safe_malloc(MAX_BUF*sizeof(char));
 
-	int sockfd = 0;
-	int nfds	  = 0;
+	struct timeval		 timeout;
+	struct in_addr 	 *host_addr = NULL;	//
 	struct sockaddr_in sockaddr;
-	char* request[HTTP_MAX_BUF];	// = (char*)safe_malloc(MAX_BUF*sizeof(char));
 
-	int numbytes, totalbytes, done;
+	FILE   *stream = NULL;
 	fd_set readfds;
-	struct timeval	timeout;
-	FILE *stream;
-//	char* tofile;
-	long filesize = -1;
-	char* tofile = NULL;
 
-//	if ( NULL != (p1 = strstr(purl, "http://")) )	/** 略过“http://” */
-//	{
-//		purl = p1 + 7;
-//	}
-//
-//	if ( NULL != (p1 = strstr(purl, "/")) )		/**  */
-////	if ( NULL != (p1 = strstr(purl, ":")) )
-//	{
-//		request_path = safe_strdup(p1);
-//		*p1 = '\0';
-//	}
-
-//	hostname = safe_strdup(purl);
 	hostname = safe_strdup(auth_server->authserv_hostname);
 	if(NULL == hostname)
 	{
@@ -1300,55 +1274,47 @@ get_config_from_server_2(const t_auth_serv *auth_server, const char* path, const
 		free(hostname);
 		return -1;
 	}
-//	printf("host name: %s\n", hostname);
 	debug(LOG_DEBUG, "host name: %s", hostname);
 
 	host_addr = get_http_server_addr(hostname);
 	if(NULL == host_addr)
 	{
-//		perror("Coundn't get server IP.");
 		debug(LOG_ERR,"Coundn't get server IP.");
 		free(host_addr);
 		return -2;
 	}
 	free(hostname);
 	hostname = NULL;
-//	printf("Server IP: %s\n", inet_ntoa(*h_addr));
-//	debug(LOG_INFO, "Server IP: %s\n", inet_ntoa(*h_addr));
 
 	/*
 	 * <此处添加下载文件的相关代码>
 	 */
-//	printf("Will be downloading...\n");
 	debug(LOG_INFO,"Will be downloading...");
 
 	/** socket连接信息初始化 */
 	sockaddr.sin_family 	= AF_INET;
-//	sockaddr.sin_port		= htons(CONFIGGILE_SERVER_PORT);
 	sockaddr.sin_port		= htons(port);
 	sockaddr.sin_addr		= *host_addr;
 	memset(&(sockaddr.sin_zero), '\0', sizeof(sockaddr.sin_zero));
 	free(host_addr);
+	host_addr = NULL;
 
 	/** 创建socket描述符 */
-	if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
+	if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0)
 	{
-		perror("Failed create socket.");
+		debug(LOG_ERR, "Failed create socket: %s", strerror(errno));
 		return -3;
 	}
 
-	/** 连接config服务器 */
+	/** 连接configure file服务器 */
 	if(connect(sockfd, (struct sockaddr*)&sockaddr, sizeof(struct sockaddr)) == -1)
 	{
-		perror("Failed to connect to config server.");
+		debug(LOG_ERR, "Failed to connect to config server: %s", strerror(errno));
 		close(sockfd);
 		return -4;
 	}
 
-	/**
-	 * <创建HTTP请求>
-	 */
-	/** 构建HTTP请求 */
+	/** <创建HTTP请求> */
 	snprintf((char*)request,
 				sizeof(request) - 1,
 				"GET %s HTTP/1.0\r\n"
@@ -1360,9 +1326,13 @@ get_config_from_server_2(const t_auth_serv *auth_server, const char* path, const
 				MYNAME);
 
 	/** 发送HTTP请求 */
-	send(sockfd, request, strlen((const char*)request), 0);
+	if(0 > send(sockfd, request, strlen(request), 0))
+	{
+		debug(LOG_ERR, "Send request to configure file server failed: %s", strerror(errno));
+		close(sockfd);
+		return -5;
+	}
 
-//	printf("Reading response.\n");
 	debug(LOG_INFO, "Reading response.");
 
 	numbytes = totalbytes = 0;
@@ -1392,7 +1362,6 @@ get_config_from_server_2(const t_auth_serv *auth_server, const char* path, const
 			else
 			{
 				totalbytes += numbytes;
-//				perror( "Read bytes");
 				debug(LOG_INFO, "Read %d bytes", totalbytes);
 			}
 		}
@@ -1411,43 +1380,33 @@ get_config_from_server_2(const t_auth_serv *auth_server, const char* path, const
 	}while(done == 0);
 
 	request[totalbytes] = '\0';
-//	printf( "HTTP Response from Server, length: %d bytes \n[%s]\n", strlen((const char*)request), request);
-//	printf( "HTTP Response from Server, length: %d bytes \n[%s]\n", totalbytes, request);
 	debug(LOG_INFO, "HTTP Response from Server, length: %d bytes", totalbytes);
 
-	if ((filesize = ret_file_size((char*)request)) < 0)
+	if ((filesize = ret_file_size((char*)request)) <= 0)
 	{
 		debug(LOG_ERR, "Get real size failed");
 		close(sockfd);
 		return -8;
 	}
 	tofile = (char *)request;
-	tofile = tofile + totalbytes - filesize;
+	tofile += totalbytes - filesize; /** 跳过HTTP header信息 */
 
-//	printf("file size: %d  read size: %d\n\n %s\n", filesize, strlen((const char*)request), tofile);
+//	debug(LOG_DEBUG, "File size: %d, read size: %d\n File content: [%s]", filesize, strlen((const char*)request), tofile);
 
-	/*
-	 * 将服务器回复存入文件
-	 */
-	stream = fopen(CONFIGFILE_FROM_SERVER, "w+");
+	/** 将服务器回复存入文件 */
+	stream = fopen(save_path, "w+");
 	if(NULL == stream)
 	{
-//		perror("Open file failed.");
-		debug(LOG_ERR, "Open file failed.");
+		debug(LOG_ERR, "Create file failed: %s", strerror(errno););
 		goto clean;
 	}
-//	tofile = (char*)&(request[strlen((const char*)request)-852]);
+
 	fprintf(stream, "%s", tofile);
-//	fwrite(tofile, 1, strlen(tofile), stream);
-//	fputs(tofile, stream);
 	sync();
-//	fprintf(stream, "%s", request);
 
 clean:
 	fclose(stream);
 	close(sockfd);
-	hostname = NULL;
-	host_addr = NULL;
 
 	return 0;
 }
@@ -1455,6 +1414,8 @@ clean:
 
 /**
  * 获取本地CPU型号
+ * It can not work well on my fedora20,
+ * because there is no "cpu model" string.
  */
 char *get_platform(void)
 {

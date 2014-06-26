@@ -164,8 +164,8 @@ connect_to_server(const char *sock_name)
 static size_t
 send_request(int sock, const char *request)
 {
-	size_t	len;
-        ssize_t written;
+	size_t  len;
+   ssize_t written;
 		
 	len = 0;
 	while (len != strlen(request))
@@ -354,17 +354,45 @@ get_wd_start_time(void)
 		start_time = now;	/** for debug */
 	}
 
-	fprintf(stderr, "Started time: [%ld]  Time now: [%ld]", start_time, now);
+	fprintf(stderr, "Started time: [%ld]  \nTime now: [%ld]\n", start_time, now);
 
 	return start_time;
 }
 
 
+int
+tell_wd_download(const char* save_path)
+{
+	int	sock;
+	char	buffer[512];		/** recv node id */
+	char	request[16];
+	int	len;
+
+	sock = connect_to_server(config.socket);
+
+	sprintf(request, "#%s\r\n\r\n", save_path); /** #: download ; %s: save path */
+
+	len = send_request(sock, request);
+
+	while ((len = read(sock, buffer, sizeof(buffer))) > 0)
+	{
+		buffer[len] = '\0';
+		printf("%s", buffer);
+	}
+	shutdown(sock, 2);
+	close(sock);
+
+	return strncmp(buffer, "OK", 2);
+}
+
+
+
 time_t
 get_conf_update_time()
 {
-	time_t update = time(NULL);
+	time_t update = 0;
 
+	tell_wd_download(SAVE_PATH);
 
 	return update;
 }

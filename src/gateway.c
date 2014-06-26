@@ -533,88 +533,55 @@ main_loop(void)
 /** Reads the configuration file and then starts the main loop */
 int main(int argc, char **argv)
 {
-//	char *request_config[MAX_BUF];
-	char *request_config_url = NULL;
-	char *server_name = NULL;
-	char *nodeid = NULL;
-	char *platform = NULL;
-	int length = 0;
-	char http_args[2][MAX_BUF/4];
-	char request_path[MAX_BUF] = {0};
+	int  length			 = 0;
+	char *server_name	 = NULL;
+	char *nodeid		 = NULL;
+	char *platform		 = NULL;
+	char *request_config_url	 = NULL;
+	char http_args[2][16]		 = {0};
+	char request_path[MAX_BUF]	 = {0};
 
 	s_config *config = config_get_config();
 	config_init();							/** 对配置选项设置默认值 */
 
 	parse_commandline(argc, argv);	/** 分析命令行参数 */
-//
-//	if(get_config_from_server(CONFIGFILE_URL, CONFIGFILE_FROM_SERVER) != 0)	/** 从服务器下载配置文件 */
-//	{
-//		debug(LOG_ERR, "Download config file from Server failed. Use locale file.");
-//	}
-//	else
-//	{
-//		debug(LOG_INFO, "Download config file from Server successful. Use download file.");
-//		strncpy(config->configfile, CONFIGFILE_FROM_SERVER, sizeof(config->configfile));
-//	}
 
 	/* Initialize the config */
 	config_read(config->configfile);	/** 读取配置文件 */
 	config_validate();
 
-
 	/**
 	 * create_request(autherver name, node id);
 	 */
-//	server_name = safe_strdup(config->auth_servers->authserv_hostname);
-	nodeid		= safe_strdup(config->gw_id);
-	debug(LOG_DEBUG, "Get node id : [%s]", nodeid);
-	platform		= get_platform();
-	debug(LOG_DEBUG, "Get platform : [%s]", platform);
-//	request_config_url = create_request(server_name, nodeid); /** 生成下载文件URL： http://servername/xxx?id=nodeid */
+	nodeid	= safe_strdup(config->gw_id);
+	platform	= get_platform();
+	debug(LOG_DEBUG, "Get node id : [%s], Platform : [%s]", nodeid, platform);
 
-	/** for  test  */
-	/** http://ServerName:Port/wd_conf/wd_hg255d.conf */
-//	request_config_url = create_request(config->auth_servers, "wd_conf/wd_hg255d.conf", NULL);
-	snprintf(http_args[0], MAX_BUF/4, "nodeid=%s", nodeid);
-	snprintf(http_args[1], MAX_BUF/4, "platform=%s", platform);
+	snprintf(http_args[0], 16, "nodeid=%s", 	nodeid);
+	snprintf(http_args[1], 16, "platform=%s", platform);
 
+	free(nodeid);
 	free(platform);
+	nodeid = NULL;
 	platform = NULL;
 
-	/**
-	request_config_url = create_request(config->auth_servers, "wd_conf/wd_hg255d.conf", http_args);
-	debug(LOG_DEBUG, "Get config file url: %s", request_config_url);
-
-	free(server_name);
-	server_name = NULL;
-	free(nodeid);
-	nodeid = NULL;
-*/
-
 	snprintf(request_path, MAX_BUF,
-			"/wd_conf/wifi_conf.php?%s&%s",
-			http_args[0],
-			http_args[1]
-			);
+				"/wd_conf/wifi_conf.php?%s&%s",
+				http_args[0],
+				http_args[1] );
 	debug(LOG_DEBUG, "Config file path: %s", request_path);
-//	if( (request_config_url != NULL) &&
-	if( (strlen(request_path) != 0) &&
-//		 (get_config_from_server(CONFIGFILE_URL, CONFIGFILE_FROM_SERVER) == 0) )
-//		 get_config_from_server(request_config_url, CONFIGFILE_FROM_SERVER) == 0 )
-//		get_config_from_server_2(config->auth_servers, "/wd_conf/wd_hg255d.conf",CONFIGFILE_FROM_SERVER) == 0 )
-		get_config_from_server_2(config->auth_servers, request_path, CONFIGFILE_FROM_SERVER) == 0 )
+
+	if( (strlen(request_path) > 0) &&
+		 get_config_from_server_2(config->auth_servers, request_path, CONFIGFILE_SAVA_PATH) == 0 )
 	{
 		debug(LOG_INFO, "Download config file from Server successful.");
-		strncpy(config->configfile, CONFIGFILE_FROM_SERVER, sizeof(config->configfile));
+		strncpy(config->configfile, CONFIGFILE_SAVA_PATH, sizeof(config->configfile));
 
-		/* Reread the config */
-		debug(LOG_INFO, "Use download file. Reread config file.");
+		/* Re-read the config */
+		debug(LOG_INFO, "Use download file. Re-read config file.");
 		config_read(config->configfile);	/** 读取配置文件 */
 		config_validate();
 	}
-
-//	free(request_config_url);
-//	request_config_url = NULL;
 
 	/* Initializes the linked list of connected clients */
 	client_list_init();

@@ -5,6 +5,7 @@
 #include <time.h>
 
 #define DEFAULT_SOCK	"/tmp/wdctl.sock"
+#define SAVE_PATH    "/tmp/.dl_dog"
 
 #define WDCTL_UNDEF			0
 #define WDCTL_STATUS			1
