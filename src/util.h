@@ -4,6 +4,7 @@
 
 #define STATUS_BUF_SIZ	16384UL
 #define NODEID_BUF_SIZ  64UL
+#define STARTIME_BUG_SIZ 64UL
 
 /** @brief Execute a shell command
  */
@@ -42,6 +43,16 @@ char * get_status_text();
  * @brief Get node id
  */
 char *get_nodeid();
+
+/*
+ * @brief Get start time
+ */
+time_t get_startime();
+
+/*
+ * @brief Get start time
+ */
+char* get_startime_str()
 
 
 #define LOCK_GHBN() do { \

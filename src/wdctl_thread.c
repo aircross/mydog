@@ -181,6 +181,10 @@ thread_wdctl_handler(void *arg)
 	{
 		wdctl_getid(fd);  /** Get node id */
 	}
+	else if (strncmp(request, "startime", 8) == 0)
+	{
+		wdctl_get_startime(fd);  /** 获取启动时间 */
+	}
 
 	if (!done)
 	{
@@ -230,6 +234,24 @@ wdctl_getid(int fd)
 	}
 
 	free(status);
+}
+
+
+void
+wdctl_get_startime(int fd)
+{
+	char *startime = NULL;
+	int len = 0;
+
+	startime = get_startime_str();
+	len = strlen(startime);
+
+	if(write(fd, startime, len) == -1)
+	{
+		debug(LOG_CRIT, "Write error: %s", strerror(errno));
+	}
+
+	free(startime);
 }
 
 

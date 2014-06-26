@@ -128,6 +128,10 @@ parse_commandline(int argc, char **argv)
 	{
 		config.command = WDCTL_NODEID;
 	}
+	else if (strcmp(*(argv + optind), "chkup") == 0)
+	{
+		config.command = WDCTL_CHK_UPDATE;
+	}
 	 else
 	 {
 		fprintf(stderr, "wdctl: Error: Invalid command \"%s\"\n", *(argv + optind));
@@ -326,10 +330,11 @@ get_wd_start_time(void)
 	char	request[16];
 	int	len;
 	time_t start_time;
+	time_t now;
 
 	sock = connect_to_server(config.socket);
 
-	strncpy(request, "start_time\r\n\r\n", 10);
+	strncpy(request, "startime\r\n\r\n", 16);
 
 	len = send_request(sock, request);
 
@@ -343,9 +348,25 @@ get_wd_start_time(void)
 	close(sock);
 
 	start_time = strtol(buffer, NULL, 10);
-	if()
+	if(errno == ERANGE)   /**  */
+	{
+		now = time(NULL);
+		start_time = now;	/** for debug */
+	}
+
+	fprintf(stderr, "Started time: [%ld]  Time now: [%ld]", start_time, now);
 
 	return start_time;
+}
+
+
+time_t
+get_conf_update_time()
+{
+	time_t update = time(NULL);
+
+
+	return update;
 }
 
 
@@ -363,10 +384,9 @@ void wdctl_chk_update()
 
 	if(chk_time.update > chk_time.last_get)
 	{
+		fprintf(stderr, "New configure file, restart now.");
 		wdctl_restart();
 	}
-
-	request_server();
 }
 
 

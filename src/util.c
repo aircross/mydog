@@ -590,6 +590,42 @@ char *get_nodeid()
 
 
 
+time_t
+get_startime()
+{
+	time_t result = started_time;
+
+	if(result == 0 || result < 0)	/** 输出启动时间 */
+	{
+		debug(LOG_ERR, "Get start time wrong.");
+
+	}
+
+	return result;
+}
+
+
+
+char*
+get_startime_str()
+{
+	time_t startime = started_time;
+	char result[STARTIME_BUG_SIZ];
+
+	if(startime == 0 || startime < 0)	/** 输出启动时间 */
+	{
+		debug(LOG_ERR, "Get start time wrong.");
+		return NULL;
+	}
+
+	sprintf(result, "%d", startime);
+
+	return safe_strdup(result);
+}
+
+
+
+
 
 
 
