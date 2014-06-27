@@ -15,6 +15,8 @@
 #define WDCTL_NODEID			5  /** Get node id */
 #define WDCTL_CHK_UPDATE	6  /** check update configure file */
 
+#define CHECK_UP_TIME		10
+
 typedef struct {
 	char	*socket;
 	int	command;

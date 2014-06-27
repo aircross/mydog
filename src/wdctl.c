@@ -461,6 +461,7 @@ void wdctl_chk_update()
 int
 main(int argc, char **argv)
 {
+	pid_t result;
 
 	/* Init configuration */
 	init_config();
@@ -469,31 +470,81 @@ main(int argc, char **argv)
 	switch(config.command) {
 	case WDCTL_STATUS:
 		wdctl_status();
+		free(config.socket);
+		config.socket = NULL;
 		break;
 	
 	case WDCTL_STOP:
 		wdctl_stop();
+		free(config.socket);
+		config.socket = NULL;
 		break;
 
 	case WDCTL_KILL:
 		wdctl_reset();
+		free(config.socket);
+		config.socket = NULL;
 		break;
 		
 	case WDCTL_RESTART:
 		wdctl_restart();
+		free(config.socket);
+		config.socket = NULL;
 		break;
 
 	case WDCTL_NODEID:
 		wdctl_getid();
+		free(config.socket);
+		config.socket = NULL;
 		break;
 
 	case WDCTL_CHK_UPDATE:
-		wdctl_chk_update();
+		free(config.socket);
+		config.socket = NULL;
+		result = fork();
+		if(result < 0)
+		{
+			exit(1);
+		}
+		else if (result == 0) /** child */
+		{
+			setsid();
+			close(STDIN_FILENO);
+			close(STDOUT_FILENO);
+			//close(STDERR_FILENO);   /** 这里需要修改，应该关闭所有描述符 */
+
+			result = fork();
+			if(result == 0)
+			{
+				chdir("/tmp");
+				umask(0);
+				init_config();
+				while(1)
+				{
+					wdctl_chk_update();
+					sleep(CHECK_UP_TIME);
+				}
+			}
+			else if (result < 0)
+			{
+				exit(1);
+			}
+			else
+			{
+				exit(0);
+			}
+
+		}
+		else  /** parent */
+		{
+			exit(0);
+		}
 		break;
 
 	default:
 		/* XXX NEVER REACHED */
 		fprintf(stderr, "Oops\n");
+		free(config.socket);
 		exit(1);
 		break;
 	}
