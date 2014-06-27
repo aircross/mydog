@@ -265,7 +265,7 @@ wdctl_reset(void)
 	}
 	else
 	{
-		fprintf(stderr, "wdctl: Error: WiFiDog sent an abnormal " "reply.\n");
+		fprintf(stderr, "wdctl: Error: WiFiDog sent an abnormal reply.\n");
 	}
 
 	shutdown(sock, 2);
@@ -341,20 +341,20 @@ get_wd_start_time(void)
 	while ((len = read(sock, buffer, sizeof(buffer))) > 0)
 	{
 		buffer[len] = '\0';
-		printf("%s", buffer);
+//		printf("%s", buffer);
 	}
 
 	shutdown(sock, 2);
 	close(sock);
 
 	start_time = strtol(buffer, NULL, 10);
+	now = time(NULL);
 	if(errno == ERANGE)   /**  */
 	{
-		now = time(NULL);
 		start_time = now;	/** for debug */
 	}
 
-	fprintf(stderr, "Started time: [%ld]  \nTime now: [%ld]\n", start_time, now);
+	fprintf(stderr, "Started time: [%ld] \tTime now: [%ld]\n", start_time, now);
 
 	return start_time;
 }
@@ -364,7 +364,7 @@ int
 tell_wd_download(const char* save_path)
 {
 	int	sock;
-	char	buffer[512];		/** recv node id */
+	char	buffer[16];		/** recv node id */
 	char	request[16];
 	int	len;
 
@@ -374,10 +374,11 @@ tell_wd_download(const char* save_path)
 
 	len = send_request(sock, request);
 
-	while ((len = read(sock, buffer, sizeof(buffer))) > 0)
+	while ((len = read(sock, buffer, sizeof(buffer))) > 0) /** if download successful, server will response "OK" */
 	{
 		buffer[len] = '\0';
-		printf("%s", buffer);
+//		printf("%s", buffer);
+		fprintf(stderr, "I told server download file, it's response: [%s]\n", buffer);
 	}
 	shutdown(sock, 2);
 	close(sock);
@@ -386,13 +387,46 @@ tell_wd_download(const char* save_path)
 }
 
 
+time_t
+read_time(const char* confile)
+{
+	time_t update_time = 0L;
+	FILE   *fp_confile = NULL;
+//	char   buffer[64] = {0};
+
+	if((fp_confile = fopen(confile, "r")) < 0)
+	{
+		fprintf(stderr, "Open file failed\n");
+		return update_time;
+	}
+
+	if(feof(fp_confile) ||
+		(fscanf(fp_confile, "##%ld", &update_time) <= 0))
+	{
+		fprintf(stderr, "Read time failed.\n");
+		update_time = 0L;
+	}
+
+	fclose(fp_confile);
+
+	return update_time;
+}
+
+
 
 time_t
-get_conf_update_time()
+get_conf_update_time(const char* save_path)
 {
-	time_t update = 0;
+	time_t update = 0L;
 
-	tell_wd_download(SAVE_PATH);
+	if(0 != tell_wd_download(save_path))
+	{
+		fprintf(stderr, "Download confile failed.\n");
+		return update;
+	}
+
+	update = read_time(save_path);
+	fprintf(stderr, "Get update time [%ld].\n", update);
 
 	return update;
 }
@@ -406,14 +440,19 @@ void wdctl_chk_update()
 {
 	chk_time_t chk_time;
 
+	fprintf(stderr, "Check update time...\n");
 
 	chk_time.last_get = get_wd_start_time();
-	chk_time.update	= get_conf_update_time();
+	chk_time.update	= get_conf_update_time(SAVE_PATH);
 
 	if(chk_time.update > chk_time.last_get)
 	{
-		fprintf(stderr, "New configure file, restart now.");
+		fprintf(stderr, "New configure file, restart now.\n");
 		wdctl_restart();
+	}
+	else
+	{
+		fprintf(stderr, "There is no new configure file, still running.\n");
 	}
 }
 

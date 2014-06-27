@@ -41,6 +41,7 @@ static void wdctl_reset(int, const char *);
 static void wdctl_restart(int);
 static void wdctl_getid(int fd);
 static void wdctl_get_startime(int fd);
+static void wdctl_download(int fd, const char *chkfile_save_path);
 
 /** Launches a thread that monitors the control socket for request
 @param arg Must contain a pointer to a string containing the Unix domain socket to open
@@ -186,6 +187,11 @@ thread_wdctl_handler(void *arg)
 	{
 		wdctl_get_startime(fd);  /** 获取启动时间 */
 	}
+	else if (strncmp(request, "#", 1) == 0) /** wdctl request to download confile */
+	{
+		debug(LOG_DEBUG, "Receive [#], means download file, downloading... ");
+		wdctl_download(fd, request+1);
+	}
 
 	if (!done)
 	{
@@ -202,6 +208,41 @@ thread_wdctl_handler(void *arg)
 	debug(LOG_DEBUG, "Exiting thread_wdctl_handler....");
 
 	return NULL;
+}
+
+
+static void
+wdctl_download(int fd, const char *chkfile_save_path)
+{
+	s_config * wdconf = NULL;
+	char *req_confile = NULL;
+	char *nodeid      = NULL;
+
+	LOCK_CONFIG();
+	wdconf = config_get_config();
+	req_confile = generate_request_confile(REQ_PATH, wdconf->gw_id, get_platform());
+	UNLOCK_CONFIG();
+
+	if( (NULL != req_confile) &&
+		 (0 == get_config_from_server_2(wdconf->auth_servers, req_confile, chkfile_save_path)) )
+	{
+		debug(LOG_DEBUG, "Request file path: %s%s", wdconf->auth_servers->authserv_hostname, req_confile);
+		debug(LOG_DEBUG, "Download file for checking update time finished.");
+		debug(LOG_DEBUG, "Tell wdctl download finished.");
+
+		if(write(fd, "OK", 2) == -1)
+		{
+			debug(LOG_CRIT, "Write error: %s", strerror(errno));
+		}
+	}
+	else
+	{
+		debug(LOG_DEBUG, "There is a error about download file.");
+	}
+
+	free(req_confile);
+	req_confile = NULL;
+
 }
 
 static void

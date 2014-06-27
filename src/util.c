@@ -600,6 +600,7 @@ get_startime()
 		debug(LOG_ERR, "Get start time wrong.");
 
 	}
+	debug(LOG_DEBUG, "Get start time: [%ld]", started_time);
 
 	return result;
 }
@@ -624,7 +625,30 @@ get_startime_str()
 }
 
 
+/**
+ * 生成HTTP 请求
+ */
+char*
+generate_request_confile(const char* req_path, const char* nodeid, const char* platform)
+{
+	char request[MAX_BUF] = {0};
 
+	if(req_path == NULL ||
+		nodeid   == NULL ||
+		platform == NULL )
+	{
+		return NULL;
+	}
+
+	snprintf(request, MAX_BUF,
+				"%s?nodeid=%s&platform=%s",
+				req_path,
+				nodeid,
+				platform );
+	debug(LOG_DEBUG, "Generate request file path: [%s]", request);
+
+	return safe_strdup(request);
+}
 
 
 

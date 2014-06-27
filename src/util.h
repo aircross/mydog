@@ -54,6 +54,12 @@ time_t get_startime();
  */
 char* get_startime_str(); /** 这里少了一个分号，造成conf.c 大量报错  ——。 */
 
+/*
+ * @brief 生成HTTP 请求
+ */
+char*
+generate_request_confile(const char* req_path, const char* nodeid, const char* platform);
+
 
 #define LOCK_GHBN() do { \
 	debug(LOG_DEBUG, "Locking wd_gethostbyname()"); \

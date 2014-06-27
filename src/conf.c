@@ -1397,7 +1397,7 @@ get_config_from_server_2(const t_auth_serv *auth_server, const char* path, const
 	stream = fopen(save_path, "w+");
 	if(NULL == stream)
 	{
-		debug(LOG_ERR, "Create file failed: %s", strerror(errno););
+		debug(LOG_ERR, "Create file failed: %s", strerror(errno));
 		goto clean;
 	}
 
@@ -1457,5 +1457,5 @@ char *get_platform(void)
 
 	debug(LOG_DEBUG, "Platform: [%s]", platform);
 
-	return platform;
+	return platform;  /**!!! free this in caller !!!*/
 }
