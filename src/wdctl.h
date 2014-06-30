@@ -15,19 +15,19 @@
 #define WDCTL_NODEID			5  /** Get node id */
 #define WDCTL_CHK_UPDATE	6  /** check update configure file */
 
-#define CHECK_UP_TIME		10
-
-typedef struct {
-	char	*socket;
-	int	command;
-	char	*param;
-} wdctl_config_t;
-
+#define CHECK_UP_TIME		20
 
 typedef struct {
 	time_t last_get;  /** 上次更新配置文件的时间   */
 	time_t update;    /** 服务器配置文件的更新时间 */
 }chk_time_t;
 
+
+typedef struct {
+	long int chkupinterval;
+	char	*socket;
+	int	command;
+	char	*param;
+} wdctl_config_t;
 
 #endif

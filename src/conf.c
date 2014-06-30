@@ -61,6 +61,7 @@ typedef enum {
         oHTTPDPassword,
 	oClientTimeout,
 	oCheckInterval,
+	oChkUpInterval,
 	oWdctlSocket,
 	oSyslogFacility,
 	oFirewallRule,
@@ -75,39 +76,40 @@ static const struct {
 	const char *name;
 	OpCodes opcode;
 } keywords[] = {
-	{ "daemon",             	oDaemon },
-	{ "debuglevel",         	oDebugLevel },
-	{ "externalinterface",  	oExternalInterface },
-	{ "gatewayid",          	oGatewayID },
-	{ "gatewayinterface",   	oGatewayInterface },
-	{ "gatewayaddress",     	oGatewayAddress },
-	{ "gatewayport",        	oGatewayPort },
-	{ "authserver",         	oAuthServer },
-	{ "httpdmaxconn",       	oHTTPDMaxConn },
-	{ "httpdname",          	oHTTPDName },
+	{ "daemon",             oDaemon },
+	{ "debuglevel",         oDebugLevel },
+	{ "externalinterface",  oExternalInterface },
+	{ "gatewayid",          oGatewayID },
+	{ "gatewayinterface",   oGatewayInterface },
+	{ "gatewayaddress",     oGatewayAddress },
+	{ "gatewayport",        oGatewayPort },
+	{ "authserver",         oAuthServer },
+	{ "httpdmaxconn",       oHTTPDMaxConn },
+	{ "httpdname",          oHTTPDName },
 	{ "httpdrealm",			oHTTPDRealm },
 	{ "httpdusername",		oHTTPDUsername },
 	{ "httpdpassword",		oHTTPDPassword },
-	{ "clienttimeout",      	oClientTimeout },
-	{ "checkinterval",      	oCheckInterval },
+	{ "clienttimeout",      oClientTimeout },
+	{ "checkinterval",      oCheckInterval },
+	{ "chkupinterval",		oChkUpInterval},
 	{ "syslogfacility", 		oSyslogFacility },
-	{ "wdctlsocket",		oWdctlSocket },
-	{ "hostname",			oAuthServHostname },
-	{ "sslavailable",		oAuthServSSLAvailable },
-	{ "sslport",			oAuthServSSLPort },
-	{ "httpport",			oAuthServHTTPPort },
-	{ "path",			oAuthServPath },
+	{ "wdctlsocket",			oWdctlSocket },
+	{ "hostname",				oAuthServHostname },
+	{ "sslavailable",			oAuthServSSLAvailable },
+	{ "sslport",				oAuthServSSLPort },
+	{ "httpport",				oAuthServHTTPPort },
+	{ "path",					oAuthServPath },
 	{ "loginscriptpathfragment",	oAuthServLoginScriptPathFragment },
 	{ "portalscriptpathfragment",	oAuthServPortalScriptPathFragment },
-	{ "msgscriptpathfragment",	oAuthServMsgScriptPathFragment },
+	{ "msgscriptpathfragment",		oAuthServMsgScriptPathFragment },
 	{ "pingscriptpathfragment",	oAuthServPingScriptPathFragment },
 	{ "authscriptpathfragment",	oAuthServAuthScriptPathFragment },
-	{ "firewallruleset",		oFirewallRuleSet },
-	{ "firewallrule",		oFirewallRule },
-	{ "trustedmaclist",		oTrustedMACList },
-        { "htmlmessagefile",		oHtmlMessageFile },
-	{ "proxyport",			oProxyPort },
-	{ NULL,				oBadOption },
+	{ "firewallruleset",				oFirewallRuleSet },
+	{ "firewallrule",					oFirewallRule },
+	{ "trustedmaclist",				oTrustedMACList },
+   { "htmlmessagefile",				oHtmlMessageFile },
+	{ "proxyport",						oProxyPort },
+	{ NULL,								oBadOption },
 };
 
 static int 		parse_boolean_value(char *);
@@ -148,6 +150,7 @@ config_init(void)
 	config.httpdpassword			= NULL;
 	config.clienttimeout 		= DEFAULT_CLIENTTIMEOUT;
 	config.checkinterval 		= DEFAULT_CHECKINTERVAL;
+	config.chkupinterval			= DEFAULT_CHKUP_INTERVAL;
 	config.syslog_facility 		= DEFAULT_SYSLOG_FACILITY;
 	config.daemon 					= -1;
 	config.log_syslog 			= DEFAULT_LOG_SYSLOG;
@@ -367,31 +370,38 @@ Parses firewall rule set information
 static void
 parse_firewall_ruleset(const char *ruleset, FILE *file, const char *filename, int *linenum)
 {
-	char		line[MAX_BUF],
-			*p1,
-			*p2;
-	int		opcode;
+	char	line[MAX_BUF] = {0};
+	char  *p1 = NULL;
+	char  *p2 = NULL;
+	int	opcode = 0;
 
 	debug(LOG_DEBUG, "Adding Firewall Rule Set %s", ruleset);
 
 	/* Parsing loop */
-	while (memset(line, 0, MAX_BUF) && fgets(line, MAX_BUF - 1, file) && (strchr(line, '}') == NULL)) {
+	while (memset(line, 0, MAX_BUF) && fgets(line, MAX_BUF - 1, file) && (strchr(line, '}') == NULL))
+	{
 		(*linenum)++; /* increment line counter. */
 
 		/* skip leading blank spaces */
 		for (p1 = line; isblank(*p1); p1++);
 
 		/* End at end of line */
-		if ((p2 = strchr(p1, '#')) != NULL) {
+		if ((p2 = strchr(p1, '#')) != NULL)
+		{
 			*p2 = '\0';
-		} else if ((p2 = strchr(p1, '\r')) != NULL) {
+		}
+		else if ((p2 = strchr(p1, '\r')) != NULL)
+		{
 			*p2 = '\0';
-		} else if ((p2 = strchr(p1, '\n')) != NULL) {
+		}
+		else if ((p2 = strchr(p1, '\n')) != NULL)
+		{
 			*p2 = '\0';
 		}
 
 		/* next, we coopt the parsing of the regular config */
-		if (strlen(p1) > 0) {
+		if (strlen(p1) > 0)
+		{
 			p2 = p1;
 			/* keep going until word boundary is found. */
 			while ((*p2 != '\0') && (!isblank(*p2)))
@@ -410,16 +420,15 @@ parse_firewall_ruleset(const char *ruleset, FILE *file, const char *filename, in
 
 			debug(LOG_DEBUG, "p1 = [%s]; p2 = [%s]", p1, p2);
 
-			switch (opcode) {
+			switch (opcode)
+			{
 				case oFirewallRule:
 					_parse_firewall_rule(ruleset, p2);
 					break;
 
 				case oBadOption:
 				default:
-					debug(LOG_ERR, "Bad option on line %d "
-							"in %s.", *linenum,
-							filename);
+					debug(LOG_ERR, "Bad option on line %d in %s.", *linenum,	filename);
 					debug(LOG_ERR, "Exiting...");
 					exit(-1);
 					break;
@@ -438,13 +447,13 @@ _parse_firewall_rule(const char *ruleset, char *leftover)
 {
 	int i;
 	t_firewall_target target = TARGET_REJECT; /**< firewall target */
-	int all_nums = 1; /**< If 0, port contained non-numerics */
-	int finished = 0; /**< reached end of line */
-	char *token = NULL; /**< First word */
-	char *port = NULL; /**< port to open/block */
-	char *protocol = NULL; /**< protocol to block, tcp/udp/icmp */
-	char *mask = NULL; /**< Netmask */
-	char *other_kw = NULL; /**< other key word */
+	int all_nums = 1; 		/**< If 0, port contained non-numerics */
+	int finished = 0; 		/**< reached end of line */
+	char *token = NULL; 		/**< First word */
+	char *port = NULL; 		/**< port to open/block */
+	char *protocol = NULL; 	/**< protocol to block, tcp/udp/icmp */
+	char *mask = NULL; 		/**< Netmask */
+	char *other_kw = NULL; 	/**< other key word */
 	t_firewall_ruleset *tmpr;
 	t_firewall_ruleset *tmpr2;
 	t_firewall_rule *tmp;
@@ -453,24 +462,37 @@ _parse_firewall_rule(const char *ruleset, char *leftover)
 	debug(LOG_DEBUG, "leftover: %s", leftover);
 
 	/* lower case */
-	for (i = 0; *(leftover + i) != '\0'
-			&& (*(leftover + i) = tolower((unsigned char)*(leftover + i))); i++);
+	for ( i = 0;
+			(*(leftover + i) != '\0')	&&
+	      (*(leftover + i) = tolower((unsigned char)*(leftover + i)));
+		   i++);
 
 	token = leftover;
 	TO_NEXT_WORD(leftover, finished);
 
 	/* Parse token */
-	if (!strcasecmp(token, "block") || finished) {
+	if (!strcasecmp(token, "block") || finished)
+	{
 		target = TARGET_REJECT;
-	} else if (!strcasecmp(token, "drop")) {
+	}
+	else if (!strcasecmp(token, "drop"))
+	{
 		target = TARGET_DROP;
-	} else if (!strcasecmp(token, "allow")) {
+	}
+	else if (!strcasecmp(token, "allow"))
+	{
 		target = TARGET_ACCEPT;
-	} else if (!strcasecmp(token, "log")) {
+	}
+	else if (!strcasecmp(token, "log"))
+	{
 		target = TARGET_LOG;
-	} else if (!strcasecmp(token, "ulog")) {
+	}
+	else if (!strcasecmp(token, "ulog"))
+	{
 		target = TARGET_ULOG;
-	} else {
+	}
+	else
+	{
 		debug(LOG_ERR, "Invalid rule type %s, expecting "
 				"\"block\",\"drop\",\"allow\",\"log\" or \"ulog\"", token);
 		return -1;
@@ -478,34 +500,41 @@ _parse_firewall_rule(const char *ruleset, char *leftover)
 
 	/* Parse the remainder */
 	/* Get the protocol */
-	if (strncmp(leftover, "tcp", 3) == 0
-			|| strncmp(leftover, "udp", 3) == 0
-			|| strncmp(leftover, "icmp", 4) == 0) {
+	if (strncmp(leftover, "tcp", 3) == 0 ||
+		 strncmp(leftover, "udp", 3) == 0 ||
+		 strncmp(leftover, "icmp", 4) == 0)
+	{
 		protocol = leftover;
 		TO_NEXT_WORD(leftover, finished);
 	}
 
 	/* should be exactly "port" */
-	if (strncmp(leftover, "port", 4) == 0) {
+	if (strncmp(leftover, "port", 4) == 0)
+	{
 		TO_NEXT_WORD(leftover, finished);
 		/* Get port now */
 		port = leftover;
 		TO_NEXT_WORD(leftover, finished);
 		for (i = 0; *(port + i) != '\0'; i++)
+		{
 			if (!isdigit((unsigned char)*(port + i)))
 				all_nums = 0; /*< No longer only digits */
-		if (!all_nums) {
+		}
+		if (!all_nums)
+		{
 			debug(LOG_ERR, "Invalid port %s", port);
 			return -3; /*< Fail */
 		}
 	}
 
 	/* Now, further stuff is optional */
-	if (!finished) {
+	if (!finished)
+	{
 		/* should be exactly "to" */
 		other_kw = leftover;
 		TO_NEXT_WORD(leftover, finished);
-		if (strcmp(other_kw, "to") || finished) {
+		if (strcmp(other_kw, "to") || finished)
+		{
 			debug(LOG_ERR, "Invalid or unexpected keyword %s, "
 					"expecting \"to\"", other_kw);
 			return -4; /*< Fail */
@@ -516,10 +545,14 @@ _parse_firewall_rule(const char *ruleset, char *leftover)
 		TO_NEXT_WORD(leftover, finished);
 		all_nums = 1;
 		for (i = 0; *(mask + i) != '\0'; i++)
-			if (!isdigit((unsigned char)*(mask + i)) && (*(mask + i) != '.')
-					&& (*(mask + i) != '/'))
+		{
+			if (!isdigit((unsigned char)*(mask + i)) &&
+				 (*(mask + i) != '.') &&
+				 (*(mask + i) != '/') )
 				all_nums = 0; /*< No longer only digits */
-		if (!all_nums) {
+		}
+		if (!all_nums)
+		{
 			debug(LOG_ERR, "Invalid mask %s", mask);
 			return -3; /*< Fail */
 		}
@@ -530,29 +563,42 @@ _parse_firewall_rule(const char *ruleset, char *leftover)
 	memset((void *)tmp, 0, sizeof(t_firewall_rule));
 	tmp->target = target;
 	if (protocol != NULL)
+	{
 		tmp->protocol = safe_strdup(protocol);
+	}
 	if (port != NULL)
+	{
 		tmp->port = safe_strdup(port);
+	}
 	if (mask == NULL)
+	{
 		tmp->mask = safe_strdup("0.0.0.0/0");
+	}
 	else
+	{
 		tmp->mask = safe_strdup(mask);
+	}
 
 	debug(LOG_DEBUG, "Adding Firewall Rule %s %s port %s to %s", token, tmp->protocol, tmp->port, tmp->mask);
 
 	/* Append the rule record */
-	if (config.rulesets == NULL) {
+	if (config.rulesets == NULL)
+	{
 		config.rulesets = safe_malloc(sizeof(t_firewall_ruleset));
 		memset(config.rulesets, 0, sizeof(t_firewall_ruleset));
 		config.rulesets->name = safe_strdup(ruleset);
 		tmpr = config.rulesets;
-	} else {
+	}
+	else
+	{
 		tmpr2 = tmpr = config.rulesets;
-		while (tmpr != NULL && (strcmp(tmpr->name, ruleset) != 0)) {
+		while (tmpr != NULL && (strcmp(tmpr->name, ruleset) != 0))
+		{
 			tmpr2 = tmpr;
 			tmpr = tmpr->next;
 		}
-		if (tmpr == NULL) {
+		if (tmpr == NULL)
+		{
 			/* Rule did not exist */
 			tmpr = safe_malloc(sizeof(t_firewall_ruleset));
 			memset(tmpr, 0, sizeof(t_firewall_ruleset));
@@ -562,13 +608,18 @@ _parse_firewall_rule(const char *ruleset, char *leftover)
 	}
 
 	/* At this point, tmpr == current ruleset */
-	if (tmpr->rules == NULL) {
+	if (tmpr->rules == NULL)
+	{
 		/* No rules... */
 		tmpr->rules = tmp;
-	} else {
+	}
+	else
+	{
 		tmp2 = tmpr->rules;
 		while (tmp2->next != NULL)
+		{
 			tmp2 = tmp2->next;
+		}
 		tmp2->next = tmp;
 	}
 
@@ -584,7 +635,9 @@ get_ruleset(const char *ruleset)
 			&& strcmp(tmp->name, ruleset) != 0; tmp = tmp->next);
 
 	if (tmp == NULL)
+	{
 		return NULL;
+	}
 
 	return(tmp->rules);
 }
@@ -601,134 +654,175 @@ config_read(const char *filename)
 
 	debug(LOG_INFO, "Reading configuration file '%s'", filename);
 
-	if (!(fd = fopen(filename, "r"))) {
+	if (!(fd = fopen(filename, "r")))
+	{
 		debug(LOG_ERR, "Could not open configuration file '%s', "
 				"exiting...", filename);
 		exit(1);
 	}
 
-	while (!feof(fd) && fgets(line, MAX_BUF, fd)) {
+	while (!feof(fd) && fgets(line, MAX_BUF, fd))
+	{
 		linenum++;
 		s = line;
 
 		if (s[strlen(s) - 1] == '\n')
 			s[strlen(s) - 1] = '\0';
 
-		if ((p1 = strchr(s, ' '))) {
+		if ((p1 = strchr(s, ' ')))
+		{
 			p1[0] = '\0';
-		} else if ((p1 = strchr(s, '\t'))) {
+		}
+		else if ((p1 = strchr(s, '\t')))
+		{
 			p1[0] = '\0';
 		}
 
-		if (p1) {
+		if (p1)
+		{
 			p1++;
 
 			// Trim leading spaces
 			len = strlen(p1);
-			while (*p1 && len) {
+			while (*p1 && len)
+			{
 				if (*p1 == ' ')
+				{
 					p1++;
+				}
 				else
+				{
 					break;
+				}
 				len = strlen(p1);
 			}
 
 
-			if ((p2 = strchr(p1, ' '))) {
+			if ((p2 = strchr(p1, ' ')))
+			{
 				p2[0] = '\0';
-			} else if ((p2 = strstr(p1, "\r\n"))) {
+			}
+			else if ((p2 = strstr(p1, "\r\n")))
+			{
 				p2[0] = '\0';
-			} else if ((p2 = strchr(p1, '\n'))) {
+			}
+			else if ((p2 = strchr(p1, '\n')))
+			{
 				p2[0] = '\0';
 			}
 		}
 
-		if (p1 && p1[0] != '\0') {
+		if (p1 && p1[0] != '\0')
+		{
 			/* Strip trailing spaces */
 
-			if ((strncmp(s, "#", 1)) != 0) {
+			if ((strncmp(s, "#", 1)) != 0)
+			{
 				debug(LOG_DEBUG, "Parsing token: %s, "
 						"value: %s", s, p1);
 				opcode = config_parse_token(s, filename, linenum);
 
-				switch(opcode) {
-				case oDaemon:
-					if (config.daemon == -1 && ((value = parse_boolean_value(p1)) != -1)) {
-						config.daemon = value;
-					}
-					break;
-				case oExternalInterface:
-					config.external_interface = safe_strdup(p1);
-					break;
-				case oGatewayID:
-					config.gw_id = safe_strdup(p1);
-					break;
-				case oGatewayInterface:
-					config.gw_interface = safe_strdup(p1);
-					break;
-				case oGatewayAddress:
-					config.gw_address = safe_strdup(p1);
-					break;
-				case oGatewayPort:
-					sscanf(p1, "%d", &config.gw_port);
-					break;
-				case oAuthServer:
-					parse_auth_server(fd, filename, &linenum);
-					break;
-				case oFirewallRuleSet:
-					parse_firewall_ruleset(p1, fd, filename, &linenum);
-					break;
-				case oTrustedMACList:
-					parse_trusted_mac_list(p1);
-					break;
-				case oHTTPDName:
-					config.httpdname = safe_strdup(p1);
-					break;
-				case oHTTPDMaxConn:
-					sscanf(p1, "%d", &config.httpdmaxconn);
-					break;
-				case oHTTPDRealm:
-					config.httpdrealm = safe_strdup(p1);
-					break;
-				case oHTTPDUsername:
-					config.httpdusername = safe_strdup(p1);
-					break;
-				case oHTTPDPassword:
-					config.httpdpassword = safe_strdup(p1);
-					break;
-				case oBadOption:
-					debug(LOG_ERR, "Bad option on line %d "
-							"in %s.", linenum,
-							filename);
-					debug(LOG_ERR, "Exiting...");
-					exit(-1);
-					break;
-				case oCheckInterval:
-					sscanf(p1, "%d", &config.checkinterval);
-					break;
-				case oWdctlSocket:
-					free(config.wdctl_sock);
-					config.wdctl_sock = safe_strdup(p1);
-					break;
-				case oClientTimeout:
-					sscanf(p1, "%d", &config.clienttimeout);
-					break;
-				case oSyslogFacility:
-					sscanf(p1, "%d", &config.syslog_facility);
-					break;
-				case oHtmlMessageFile:
-					config.htmlmsgfile = safe_strdup(p1);
-					break;
-				case oProxyPort:
-					sscanf(p1, "%d", &config.proxy_port);
-					break;
+				switch(opcode)
+				{
+					case oDaemon:
+						if (config.daemon == -1 && ((value = parse_boolean_value(p1)) != -1))
+						{
+							config.daemon = value;
+						}
+						break;
 
+					case oExternalInterface:
+						config.external_interface = safe_strdup(p1);
+						break;
+
+					case oGatewayID:
+						config.gw_id = safe_strdup(p1);
+						break;
+
+					case oGatewayInterface:
+						config.gw_interface = safe_strdup(p1);
+						break;
+
+					case oGatewayAddress:
+						config.gw_address = safe_strdup(p1);
+						break;
+					case oGatewayPort:
+						sscanf(p1, "%d", &config.gw_port);
+						break;
+					case oAuthServer:
+						parse_auth_server(fd, filename, &linenum);
+						break;
+
+					case oFirewallRuleSet:
+						parse_firewall_ruleset(p1, fd, filename, &linenum);
+						break;
+
+					case oTrustedMACList:
+						parse_trusted_mac_list(p1);
+						break;
+
+					case oHTTPDName:
+						config.httpdname = safe_strdup(p1);
+						break;
+
+					case oHTTPDMaxConn:
+						sscanf(p1, "%d", &config.httpdmaxconn);
+						break;
+
+					case oHTTPDRealm:
+						config.httpdrealm = safe_strdup(p1);
+						break;
+
+					case oHTTPDUsername:
+						config.httpdusername = safe_strdup(p1);
+						break;
+
+					case oHTTPDPassword:
+						config.httpdpassword = safe_strdup(p1);
+						break;
+
+					case oBadOption:
+						debug(LOG_ERR, "Bad option on line %d "
+								"in %s.", linenum,
+								filename);
+						debug(LOG_ERR, "Exiting...");
+						exit(-1);
+						break;
+
+					case oCheckInterval:
+						sscanf(p1, "%d", &config.checkinterval);
+						break;
+
+					case oChkUpInterval:
+						sscanf(p1, "%d", &config.chkupinterval);
+						break;
+
+					case oWdctlSocket:
+						free(config.wdctl_sock);
+						config.wdctl_sock = safe_strdup(p1);
+						break;
+
+					case oClientTimeout:
+						sscanf(p1, "%d", &config.clienttimeout);
+						break;
+					case oSyslogFacility:
+						sscanf(p1, "%d", &config.syslog_facility);
+						break;
+
+					case oHtmlMessageFile:
+						config.htmlmsgfile = safe_strdup(p1);
+						break;
+
+					case oProxyPort:
+						sscanf(p1, "%d", &config.proxy_port);
+						break;
 				}
 			}
 		}
 	}
 
-	if (config.httpdusername && !config.httpdpassword) {
+	if (config.httpdusername && !config.httpdpassword)
+	{
 		debug(LOG_ERR, "HTTPDUserName requires a HTTPDPassword to be set.");
 		exit(-1);
 	}
@@ -742,23 +836,28 @@ Parses a boolean value from the config file
 static int
 parse_boolean_value(char *line)
 {
-	if (strcasecmp(line, "yes") == 0) {
+	if (strcasecmp(line, "yes") == 0)
+	{
 		return 1;
 	}
-	if (strcasecmp(line, "no") == 0) {
+	if (strcasecmp(line, "no") == 0)
+	{
 		return 0;
 	}
-	if (strcmp(line, "1") == 0) {
+	if (strcmp(line, "1") == 0)
+	{
 		return 1;
 	}
-	if (strcmp(line, "0") == 0) {
+	if (strcmp(line, "0") == 0)
+	{
 		return 0;
 	}
 
 	return -1;
 }
 
-void parse_trusted_mac_list(const char *ptr) {
+void parse_trusted_mac_list(const char *ptr)
+{
 	char *ptrcopy = NULL;
 	char *possiblemac = NULL;
 	char *mac = NULL;
@@ -771,18 +870,22 @@ void parse_trusted_mac_list(const char *ptr) {
 	/* strsep modifies original, so let's make a copy */
 	ptrcopy = safe_strdup(ptr);
 
-	while ((possiblemac = strsep(&ptrcopy, ", "))) {
-		if (sscanf(possiblemac, " %17[A-Fa-f0-9:]", mac) == 1) {
+	while ((possiblemac = strsep(&ptrcopy, ", ")))
+	{
+		if (sscanf(possiblemac, " %17[A-Fa-f0-9:]", mac) == 1)
+		{
 			/* Copy mac to the list */
 
 			debug(LOG_DEBUG, "Adding MAC address [%s] to trusted list", mac);
 
-			if (config.trustedmaclist == NULL) {
+			if (config.trustedmaclist == NULL)
+			{
 				config.trustedmaclist = safe_malloc(sizeof(t_trusted_mac));
 				config.trustedmaclist->mac = safe_strdup(mac);
 				config.trustedmaclist->next = NULL;
 			}
-			else {
+			else
+			{
 				/* Advance to the last entry */
 				for (p = config.trustedmaclist; p->next != NULL; p = p->next);
 				p->next = safe_malloc(sizeof(t_trusted_mac));
@@ -790,7 +893,6 @@ void parse_trusted_mac_list(const char *ptr) {
 				p->mac = safe_strdup(mac);
 				p->next = NULL;
 			}
-
 		}
 	}
 

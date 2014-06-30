@@ -439,15 +439,15 @@ int
 iptables_fw_destroy_mention(
 		const char * table,
 		const char * chain,
-		const char * mention
-		) {
+		const char * mention)
+{
 	FILE *p = NULL;
-	char *command = NULL;
+	char *command  = NULL;
 	char *command2 = NULL;
-	char line[MAX_BUF];
-	char rulenum[10];
+	char line[MAX_BUF] = {0};
+	char rulenum[10]   = {0};
 	char *victim = safe_strdup(mention);
-	int deleted = 0;
+	int deleted  = 0;
 
 	iptables_insert_gateway_id(&victim);
 
@@ -497,14 +497,15 @@ iptables_fw_destroy_mention(
 }
 
 /** Set if a specific client has access through the firewall */
-	int
+int
 iptables_fw_access(fw_access_t type, const char *ip, const char *mac, int tag)
 {
 	int rc;
 
 	fw_quiet = 0;
 
-	switch(type) {
+	switch(type)
+	{
 		case FW_ACCESS_ALLOW:
 			iptables_do_command("-t mangle -A " TABLE_WIFIDOG_OUTGOING " -s %s -m mac --mac-source %s -j MARK --set-mark %d", ip, mac, tag);
 			rc = iptables_do_command("-t mangle -A " TABLE_WIFIDOG_INCOMING " -d %s -j ACCEPT", ip);
@@ -525,12 +526,12 @@ iptables_fw_access(fw_access_t type, const char *ip, const char *mac, int tag)
 	int
 iptables_fw_counters_update(void)
 {
-	FILE *output;
-	char *script,
-	     ip[16],
-	     rc;
+	FILE *output = NULL;
+	char *script = NULL;
+	char ip[16]  = {0};
+	char rc;
 	unsigned long long int counter;
-	t_client *p1;
+	t_client *p1 = NULL;
 	struct in_addr tempaddr;
 
 	/* Look for outgoing traffic */
@@ -589,7 +590,8 @@ iptables_fw_counters_update(void)
 	iptables_insert_gateway_id(&script);
 	output = popen(script, "r");
 	free(script);
-	if (!output) {
+	if (!output)
+	{
 		debug(LOG_ERR, "popen(): %s", strerror(errno));
 		return -1;
 	}

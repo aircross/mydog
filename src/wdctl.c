@@ -26,6 +26,7 @@ static void wdctl_status(void);
 static void wdctl_stop(void);
 static void wdctl_reset(void);
 static void wdctl_restart(void);
+long int tell_wd_download(const char* save_path);
 
 /** @internal
  * @brief Print usage
@@ -360,13 +361,14 @@ get_wd_start_time(void)
 }
 
 
-int
+long int
 tell_wd_download(const char* save_path)
 {
 	int	sock;
 	char	buffer[16];		/** recv node id */
 	char	request[16];
 	int	len;
+	long int chkup_interval = 0L;
 
 	sock = connect_to_server(config.socket);
 
@@ -378,12 +380,15 @@ tell_wd_download(const char* save_path)
 	{
 		buffer[len] = '\0';
 //		printf("%s", buffer);
-		fprintf(stderr, "I told server download file, it's response: [%s]\n", buffer);
+		fprintf(stderr, "I told server download file, response: [%s]\n", buffer);
 	}
 	shutdown(sock, 2);
 	close(sock);
 
-	return strncmp(buffer, "OK", 2);
+	chkup_interval = strtol(buffer, NULL, 10);
+
+//	return strncmp(buffer, "OK", 2);
+	return chkup_interval;
 }
 
 
@@ -419,7 +424,9 @@ get_conf_update_time(const char* save_path)
 {
 	time_t update = 0L;
 
-	if(0 != tell_wd_download(save_path))
+	config.chkupinterval = tell_wd_download(save_path); /** config为全局变量 */
+
+	if(0 >= config.chkupinterval)
 	{
 		fprintf(stderr, "Download confile failed.\n");
 		return update;
@@ -522,7 +529,8 @@ main(int argc, char **argv)
 				while(1)
 				{
 					wdctl_chk_update();
-					sleep(CHECK_UP_TIME);
+					config.chkupinterval = (config.chkupinterval > 0) ? config.chkupinterval : CHECK_UP_TIME;
+					sleep(config.chkupinterval);
 				}
 			}
 			else if (result < 0)

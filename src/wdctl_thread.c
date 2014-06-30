@@ -217,6 +217,7 @@ wdctl_download(int fd, const char *chkfile_save_path)
 	s_config * wdconf = NULL;
 	char *req_confile = NULL;
 	char *nodeid      = NULL;
+	char chkup_interval[6] = {0};
 
 	LOCK_CONFIG();
 	wdconf = config_get_config();
@@ -230,7 +231,10 @@ wdctl_download(int fd, const char *chkfile_save_path)
 		debug(LOG_DEBUG, "Download file for checking update time finished.");
 		debug(LOG_DEBUG, "Tell wdctl download finished.");
 
-		if(write(fd, "OK", 2) == -1)
+		sprintf(chkup_interval, "%d", wdconf->chkupinterval);
+
+//		if(write(fd, "OK", 2) == -1)	/** 将恢复内容“OK”替换成wctl检查更新的时间间隔 */
+		if(write(fd, chkup_interval, 6) == -1)
 		{
 			debug(LOG_CRIT, "Write error: %s", strerror(errno));
 		}
