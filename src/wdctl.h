@@ -15,7 +15,7 @@
 #define WDCTL_NODEID			5  /** Get node id */
 #define WDCTL_CHK_UPDATE	6  /** check update configure file */
 
-#define CHECK_UP_TIME		20
+#define DEFAULT_CHECKUP_INTERVAL		120L
 
 typedef struct {
 	time_t last_get;  /** 上次更新配置文件的时间   */

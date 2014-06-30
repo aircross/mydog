@@ -17,6 +17,7 @@
 
 wdctl_config_t config;
 
+
 static void usage(void);
 static void init_config(void);
 static void parse_commandline(int, char **);
@@ -27,6 +28,8 @@ static void wdctl_stop(void);
 static void wdctl_reset(void);
 static void wdctl_restart(void);
 long int tell_wd_download(const char* save_path);
+void _wdctl_chk_update(chk_time_t *check_time);
+void wdctl_chk_update();
 
 /** @internal
  * @brief Print usage
@@ -60,6 +63,7 @@ init_config(void)
 
 	config.socket = strdup(DEFAULT_SOCK);
 	config.command = WDCTL_UNDEF;
+	config.chkupinterval = DEFAULT_CHECKUP_INTERVAL;
 }
 
 /** @internal
@@ -433,7 +437,7 @@ get_conf_update_time(const char* save_path)
 	}
 
 	update = read_time(save_path);
-	fprintf(stderr, "Get update time [%ld].\n", update);
+	fprintf(stderr, "Update time: [%ld]\n", update);
 
 	return update;
 }
@@ -443,24 +447,72 @@ get_conf_update_time(const char* save_path)
 /**
  * 定时检查配置文件，若有更新，重新启动WD
  */
-void wdctl_chk_update()
+void _wdctl_chk_update(chk_time_t *check_time)
 {
-	chk_time_t chk_time;
+	fprintf(stderr, "Last   time: [%ld] \nTime    now: [%ld]\n", check_time->last_get, time(NULL));
 
-	fprintf(stderr, "Check update time...\n");
-
-	chk_time.last_get = get_wd_start_time();
-	chk_time.update	= get_conf_update_time(SAVE_PATH);
-
-	if(chk_time.update > chk_time.last_get)
+	if(check_time->last_get < check_time->update)
 	{
-		chk_time.last_get = chk_time.update;   /**  */
-		fprintf(stderr, "New configure file, restart now.\n");
+		check_time->last_get = check_time->update;   /**  */
+		fprintf(stderr, "New configure file, restart now...\n");
 		wdctl_restart();
 	}
 	else
 	{
-		fprintf(stderr, "There is no new configure file, still running.\n");
+		fprintf(stderr, "There is no new configure file, keep running...\n");
+	}
+}
+
+
+
+void wdctl_chk_update()
+{
+	pid_t result;
+	chk_time_t chk_time;
+
+	result = fork();
+	if(result < 0)
+	{
+		exit(1);
+	}
+	else if (result == 0) /** child */
+	{
+		setsid();
+		close(STDIN_FILENO);
+		close(STDOUT_FILENO);
+		//close(STDERR_FILENO);   /** 这里需要修改，应该关闭所有描述符 */
+
+		result = fork();
+		if(result == 0)
+		{
+			chdir("/tmp");
+			umask(0);
+			chk_time.last_get = get_wd_start_time();
+
+			while(1)
+			{
+				fprintf(stderr, "Check update time...\n");
+				chk_time.update	= get_conf_update_time(SAVE_PATH);
+
+				_wdctl_chk_update(&chk_time);
+
+				config.chkupinterval = (config.chkupinterval > 0) ? config.chkupinterval : DEFAULT_CHECKUP_INTERVAL;
+				sleep(config.chkupinterval);
+			}
+		}
+		else if (result < 0)
+		{
+			exit(1);
+		}
+		else
+		{
+			exit(0);
+		}
+
+	}
+	else  /** parent */
+	{
+		exit(0);
 	}
 }
 
@@ -469,11 +521,13 @@ void wdctl_chk_update()
 int
 main(int argc, char **argv)
 {
-	pid_t result;
+
 
 	/* Init configuration */
 	init_config();
 	parse_commandline(argc, argv);
+
+
 
 	switch(config.command) {
 	case WDCTL_STATUS:
@@ -507,47 +561,9 @@ main(int argc, char **argv)
 		break;
 
 	case WDCTL_CHK_UPDATE:
+		wdctl_chk_update();
 		free(config.socket);
 		config.socket = NULL;
-		result = fork();
-		if(result < 0)
-		{
-			exit(1);
-		}
-		else if (result == 0) /** child */
-		{
-			setsid();
-			close(STDIN_FILENO);
-			close(STDOUT_FILENO);
-			//close(STDERR_FILENO);   /** 这里需要修改，应该关闭所有描述符 */
-
-			result = fork();
-			if(result == 0)
-			{
-				chdir("/tmp");
-				umask(0);
-				init_config();
-				while(1)
-				{
-					wdctl_chk_update();
-					config.chkupinterval = (config.chkupinterval > 0) ? config.chkupinterval : CHECK_UP_TIME;
-					sleep(config.chkupinterval);
-				}
-			}
-			else if (result < 0)
-			{
-				exit(1);
-			}
-			else
-			{
-				exit(0);
-			}
-
-		}
-		else  /** parent */
-		{
-			exit(0);
-		}
 		break;
 
 	default:
