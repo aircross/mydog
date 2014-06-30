@@ -454,6 +454,7 @@ void wdctl_chk_update()
 
 	if(chk_time.update > chk_time.last_get)
 	{
+		chk_time.last_get = chk_time.update;   /**  */
 		fprintf(stderr, "New configure file, restart now.\n");
 		wdctl_restart();
 	}
