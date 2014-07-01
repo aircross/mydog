@@ -80,7 +80,8 @@ authenticate_client(request *r)
 
 	client = client_list_find_by_ip(r->clientAddr);
 
-	if (client == NULL) {
+	if (client == NULL)
+	{
 		debug(LOG_ERR, "authenticate_client(): Could not find client for %s", r->clientAddr);
 		UNLOCK_CLIENT_LIST();
 		return;

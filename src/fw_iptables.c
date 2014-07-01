@@ -260,7 +260,9 @@ iptables_fw_init(void)
 	iptables_do_command("-t mangle -I POSTROUTING 1 -o %s -j " TABLE_WIFIDOG_INCOMING, config->gw_interface);
 
 	for (p = config->trustedmaclist; p != NULL; p = p->next)
+	{
 		iptables_do_command("-t mangle -A " TABLE_WIFIDOG_TRUSTED " -m mac --mac-source %s -j MARK --set-mark %d", p->mac, FW_MARK_KNOWN);
+	}
 
 	/*
 	 *

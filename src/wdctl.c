@@ -384,7 +384,7 @@ tell_wd_download(const char* save_path)
 	{
 		buffer[len] = '\0';
 //		printf("%s", buffer);
-		fprintf(stderr, "I told server download file, response: [%s]\n", buffer);
+		fprintf(stderr, "Told server download file, response: [%s]\n", buffer);
 	}
 	shutdown(sock, 2);
 	close(sock);
@@ -468,7 +468,8 @@ void _wdctl_chk_update(chk_time_t *check_time)
 void wdctl_chk_update()
 {
 	pid_t result;
-	chk_time_t chk_time;
+	chk_time_t chk_time = {0L, 0L};
+	time_t started = 0L;
 
 	result = fork();
 	if(result < 0)
@@ -488,10 +489,12 @@ void wdctl_chk_update()
 			chdir("/tmp");
 			umask(0);
 			chk_time.last_get = get_wd_start_time();
+			started = chk_time.last_get;
 
 			while(1)
 			{
 				fprintf(stderr, "Check update time...\n");
+				fprintf(stderr, "Start  time: [%ld] \n", started);
 				chk_time.update	= get_conf_update_time(SAVE_PATH);
 
 				_wdctl_chk_update(&chk_time);

@@ -533,13 +533,9 @@ main_loop(void)
 /** Reads the configuration file and then starts the main loop */
 int main(int argc, char **argv)
 {
-//	int  length			 = 0;
-//	char *server_name	 = NULL;
 	char *nodeid		 = NULL;
 	char *platform		 = NULL;
-//	char *request_config_url	 = NULL;
 	char http_args[2][16]		 = {0};
-//	char request_path[MAX_BUF]	 = {0};
 	char *request_path = NULL;
 
 	s_config *config = config_get_config();
@@ -560,18 +556,10 @@ int main(int argc, char **argv)
 
 	request_path = generate_request_confile(REQ_PATH, nodeid, platform);
 
-//	snprintf(http_args[0], 16, "nodeid=%s", 	nodeid);
-//	snprintf(http_args[1], 16, "platform=%s", platform);
-//
 	free(nodeid);
 	free(platform);
 	nodeid = NULL;
 	platform = NULL;
-//
-//	snprintf(request_path, MAX_BUF,
-//				"/wd_conf/wifi_conf.php?%s&%s",
-//				http_args[0],
-//				http_args[1] );
 
 	debug(LOG_DEBUG, "Config file path: %s", request_path);
 
