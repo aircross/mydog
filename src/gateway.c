@@ -415,13 +415,13 @@ main_loop(void)
 	 * "Can't fail" so exit() if the impossible happens. */
 	if (!config->gw_id)
 	{
-    	debug(LOG_DEBUG, "Finding MAC address of %s", config->gw_interface);
-    	if ((config->gw_id = get_iface_mac(config->gw_interface)) == NULL)
-    	{
-			debug(LOG_ERR, "Could not get MAC address information of %s, exiting...", config->gw_interface);
-			exit(1);
-		}
-		debug(LOG_DEBUG, "%s = %s", config->gw_interface, config->gw_id);
+	     debug(LOG_DEBUG, "Finding MAC address of %s", config->gw_interface);
+	     if ((config->gw_id = get_iface_mac(config->gw_interface)) == NULL)
+	      {
+		    debug(LOG_ERR, "Could not get MAC address information of %s, exiting...", config->gw_interface);
+		    exit(1);
+	      }
+	     debug(LOG_DEBUG, "%s = %s", config->gw_interface, config->gw_id);
 	}
 
 	/* Initializes the web server */
@@ -433,11 +433,11 @@ main_loop(void)
 	}
 
 	debug(LOG_DEBUG, "Assigning callbacks to web server");
-	httpdAddCContent(webserver, "/", "wifidog", 0, NULL, http_callback_wifidog);
-	httpdAddCContent(webserver, "/wifidog", "", 0, NULL, http_callback_wifidog);
-	httpdAddCContent(webserver, "/wifidog", "about", 0, NULL, http_callback_about);
-	httpdAddCContent(webserver, "/wifidog", "status", 0, NULL, http_callback_status);
-	httpdAddCContent(webserver, "/wifidog", "auth", 0, NULL, http_callback_auth);
+	httpdAddCContent(webserver, "/",        "wifidog", 0, NULL, http_callback_wifidog);
+	httpdAddCContent(webserver, "/wifidog", "",        0, NULL, http_callback_wifidog);
+	httpdAddCContent(webserver, "/wifidog", "about",   0, NULL, http_callback_about);
+	httpdAddCContent(webserver, "/wifidog", "status",  0, NULL, http_callback_status);
+	httpdAddCContent(webserver, "/wifidog", "auth",    0, NULL, http_callback_auth);
 
 	httpdAddC404Content(webserver, http_callback_404);
 
@@ -446,8 +446,8 @@ main_loop(void)
 	/* Then initialize it */
 	if (!fw_init())
 	{
-		debug(LOG_ERR, "FATAL: Failed to initialize firewall");
-		exit(1);
+	    debug(LOG_ERR, "FATAL: Failed to initialize firewall");
+	    exit(1);
 	}
 
 	/* Start clean up thread */

@@ -37,13 +37,13 @@ extern pthread_mutex_t	config_mutex;
 @param outgoing Current counter of the client's total outgoing traffic, in bytes 
 */
 t_authcode
-auth_server_request(	t_authresponse *authresponse,
-							const char *request_type,
-							const char *ip,
-							const char *mac,
-							const char *token,
-							unsigned long long int incoming,
-							unsigned long long int outgoing)
+auth_server_request(  t_authresponse *authresponse,
+			    const char *request_type,
+			    const char *ip,
+			    const char *mac,
+			    const char *token,
+			    unsigned long long int incoming,
+			    unsigned long long int outgoing)
 {
 	int sockfd;
 	ssize_t	numbytes;
@@ -92,9 +92,13 @@ auth_server_request(	t_authresponse *authresponse,
 	);
 
 	free(safe_token);
+	safe_token = NULL;
 
 	debug(LOG_DEBUG, "Sending HTTP request to auth server: [%s]\n", buf);
-	send(sockfd, buf, strlen(buf), 0);
+	if(0 > send(sockfd, buf, strlen(buf), 0))
+	{
+	    debug(LOG_ERR, "Send request to auth server failed.");
+	}
 
 	debug(LOG_DEBUG, "Reading response");
 	numbytes = totalbytes = 0;

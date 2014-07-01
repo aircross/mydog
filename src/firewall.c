@@ -182,17 +182,18 @@ void fw_set_authservers(void)
  */
 int fw_destroy(void)
 {
-	if (icmp_fd != 0)
-	{
-		debug(LOG_INFO, "Closing ICMP socket");
-		close(icmp_fd);
-	}
+    if (icmp_fd != 0)
+     {
+	  debug(LOG_INFO, "Closing ICMP socket");
+	  close(icmp_fd);
+     }
 
 	debug(LOG_INFO, "Removing Firewall rules");
 	return iptables_fw_destroy();
 }
 
-/**Probably a misnomer, this function actually refreshes the entire client list's traffic counter, re-authenticates every client with the central server and update's the central servers traffic counters and notifies it if a client has logged-out.
+/**Probably a misnomer, this function actually refreshes the entire client list's traffic counter,
+ * re-authenticates every client with the central server and update's the central servers traffic counters and notifies it if a client has logged-out.
  * @todo Make this function smaller and use sub-fonctions
  */
 void fw_sync_with_authserver(void)
@@ -229,7 +230,7 @@ void fw_sync_with_authserver(void)
 		 * However, if the firewall blocks it, it will not help.  The suggested
 		 * way to deal with this is to keep the DHCP lease time extremely
 		 * short:  Shorter than config->checkinterval * config->clienttimeout */
-		icmp_ping(ip); /** 有什么作用？ */
+		icmp_ping(ip); /** 检查客户端是否在线 */
 
 		/* Update the counters on the remote server only if we have an auth server */
 		if (config->auth_servers != NULL)
@@ -247,11 +248,11 @@ void fw_sync_with_authserver(void)
 		{
 			time_t current_time = time(NULL);
 			debug(LOG_INFO,
-					"Checking client %s for timeout:  Last updated %ld (%ld seconds ago), timeout delay %ld seconds, current time %ld, ",
-					p1->ip, p1->counters.last_updated,
-					current_time - p1->counters.last_updated,
-					config->checkinterval * config->clienttimeout,
-					current_time);
+				"Checking client %s for timeout:  Last updated %ld (%ld seconds ago), timeout delay %ld seconds, current time %ld, ",
+				p1->ip, p1->counters.last_updated,
+				current_time - p1->counters.last_updated,
+				config->checkinterval * config->clienttimeout,
+				current_time);
 			if ( current_time >=
 					(p1->counters.last_updated + (config->checkinterval * config->clienttimeout)) )
 			{

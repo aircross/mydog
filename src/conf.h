@@ -23,18 +23,18 @@
 #define CONFIGFILE_SAVA_PATH 	"/tmp/.dog.conf"			/** 从服务器获得配置文件的存放位置		*/
 #define REQ_PATH					"/wd_conf/wifi_conf.php"
 //#define CONFIGFILE_URL			"http://ServerName/node_config.php?node_id=XXX&platform=XX"
-//#define CONFIGFILE_URL 				"http://192.168.10.110/wd_conf/wd_fc20.conf"	   /** 获取配置文件的URL				 	*/
+//#define CONFIGFILE_URL 			"http://192.168.10.110/wd_conf/wd_fc20.conf"	   /** 获取配置文件的URL				 	*/
 //#define CONFIGFILE_URL 			"http://192.168.1.222/wd_conf/wd_hg255d.conf"
 #define CONFIGGILE_SERVER_PORT	80
 #define MYNAME							"WiFiDog Gateway"
-#define HTTP_MAX_BUF					10240			/** 10K, wd_hg255d.conf size  */
+#define HTTP_MAX_BUF			10240			/** 10K, wd_hg255d.conf size  */
 
-#define DEFAULT_DAEMON 				1
+#define DEFAULT_DAEMON 			1
 #define DEFAULT_DEBUGLEVEL 		LOG_INFO
 #define DEFAULT_HTTPDMAXCONN 		100
-#define DEFAULT_GATEWAYID 			"default"			/** 默认的NODE ID */
+#define DEFAULT_GATEWAYID 		"default"			/** 默认的NODE ID */
 #define DEFAULT_GATEWAYPORT 		2060
-#define DEFAULT_HTTPDNAME 			"WiFiDog"
+#define DEFAULT_HTTPDNAME 		"WiFiDog"
 #define DEFAULT_CLIENTTIMEOUT 	12						/** 根据需求 			*/
 #define DEFAULT_CHECKINTERVAL 	600					/** 修改了这两个选项 */
 #define DEFAULT_CHKUP_INTERVAL	900					/** 新增配置选项： 检查配置文件更新的时间间隔 */
