@@ -447,12 +447,12 @@ _parse_firewall_rule(const char *ruleset, char *leftover)
 {
 	int i;
 	t_firewall_target target = TARGET_REJECT; /**< firewall target */
-	int all_nums = 1; 		/**< If 0, port contained non-numerics */
-	int finished = 0; 		/**< reached end of line */
-	char *token = NULL; 		/**< First word */
-	char *port = NULL; 		/**< port to open/block */
+	int all_nums	= 1; 		/**< If 0, port contained non-numerics */
+	int finished	= 0; 		/**< reached end of line */
+	char *token 	= NULL; 	/**< First word */
+	char *port 		= NULL; 	/**< port to open/block */
 	char *protocol = NULL; 	/**< protocol to block, tcp/udp/icmp */
-	char *mask = NULL; 		/**< Netmask */
+	char *mask 		= NULL; 	/**< Netmask */
 	char *other_kw = NULL; 	/**< other key word */
 	t_firewall_ruleset *tmpr;
 	t_firewall_ruleset *tmpr2;
