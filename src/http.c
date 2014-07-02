@@ -35,9 +35,9 @@ extern pthread_mutex_t	client_list_mutex;
 void
 http_callback_404(httpd *webserver, request *r)
 {
-	char tmp_url[MAX_BUF],
-			*url,
-			*mac;
+	char tmp_url[MAX_BUF] = {0};
+	char	*url = NULL;
+	char	*mac = NULL;
 	s_config	*config = config_get_config();
 	t_auth_serv	*auth_server = get_auth_server();
 
@@ -48,13 +48,14 @@ http_callback_404(httpd *webserver, request *r)
 	 * if the internet/auth server is down so it's not a huge loss, but still.
 	 */
         snprintf(tmp_url, (sizeof(tmp_url) - 1), "http://%s%s%s%s",
-                        r->request.host,
-                        r->request.path,
-                        r->request.query[0] ? "?" : "",
-                        r->request.query);
+		      r->request.host,
+		      r->request.path,
+		      r->request.query[0] ? "?" : "",
+		      r->request.query);
 	url = httpdUrlEncode(tmp_url);
 
-	if (!is_online()) {
+	if (!is_online())
+	{
 		/* The internet connection is down at the moment  - apologize and do not redirect anywhere */
 		char * buf;
 		safe_asprintf(&buf, 
@@ -63,8 +64,9 @@ http_callback_404(httpd *webserver, request *r)
 			"<p>The maintainers of this network are aware of this disruption.  We hope that this situation will be resolved soon.</p>"
 			"<p>In a while please <a href='%s'>click here</a> to try your request again.</p>", tmp_url);
 
-      send_http_page(r, "Uh oh! Internet access unavailable!", buf);
+		send_http_page(r, "Uh oh! Internet access unavailable!", buf);
 		free(buf);
+		buf = NULL;
 		debug(LOG_INFO, "Sent %s an apology since I am not online - no point sending them to auth server", r->clientAddr);
 	}
 	else if (!is_auth_online())
@@ -76,14 +78,15 @@ http_callback_404(httpd *webserver, request *r)
 			"<p>The maintainers of this network are aware of this disruption.  We hope that this situation will be resolved soon.</p>"
 			"<p>In a couple of minutes please <a href='%s'>click here</a> to try your request again.</p>", tmp_url);
 
-      send_http_page(r, "Uh oh! Login screen unavailable!", buf);
+		send_http_page(r, "Uh oh! Login screen unavailable!", buf);
 		free(buf);
+		buf = NULL;
 		debug(LOG_INFO, "Sent %s an apology since auth server not online - no point sending them to auth server", r->clientAddr);
 	}
 	else
 	{
 		/* Re-direct them to auth server */
-		char *urlFragment;
+		char *urlFragment = NULL;
 
 		if (!(mac = arp_get(r->clientAddr)))
 		{
@@ -106,6 +109,7 @@ http_callback_404(httpd *webserver, request *r)
 				config->gw_id,
 				mac,
 				url);
+			free(mac);  /** 释放strdup()分配的内存 */
 		}
 
 		debug(LOG_INFO, "Captured %s requesting [%s] and re-directing them to login page", r->clientAddr, url);
@@ -188,8 +192,8 @@ void http_send_redirect_to_auth(request *r, const char *urlFragment, const char 
  * @param text The text to include in the redirect header and the manual redirect link title.  NULL is acceptable */
 void http_send_redirect(request *r, const char *url, const char *text)
 {
-	char *message = NULL;
-	char *header = NULL;
+	char *message  = NULL;
+	char *header   = NULL;
 	char *response = NULL;
 		/* Re-direct them to auth server */
 	debug(LOG_DEBUG, "Redirecting client browser to %s", url);
@@ -291,7 +295,6 @@ void send_http_page(request *r, const char *title, const char* message)
 	ssize_t 		written;
 	struct stat stat_info;
 	s_config		*config = config_get_config();
-
 
     fd = open(config->htmlmsgfile, O_RDONLY);
     if (fd==-1)

@@ -263,13 +263,14 @@ char *
 get_ext_iface(void)
 {
 #ifdef __linux__
-	FILE *input;
-	char *device, *gw;
+	FILE *input  = NULL;
+	char *device = NULL;
+	char *gw     = NULL;
 	int i = 1;
 	int keep_detecting = 1;
 	pthread_cond_t		cond = PTHREAD_COND_INITIALIZER;
 	pthread_mutex_t	cond_mutex = PTHREAD_MUTEX_INITIALIZER;
-	struct	timespec	timeout;
+	struct timespec timeout;
 
 	device = (char *)malloc(16);
 	gw = (char *)malloc(16);
@@ -314,11 +315,9 @@ get_ext_iface(void)
 	}
 
 	debug(LOG_ERR, "get_ext_iface(): Failed to detect the external interface after %d tries, aborting", i);
-	exit(1);
 	free(device);
-	device = NULL;
 	free(gw);
-	gw = NULL;
+	exit(1);
 #endif
 
 	return NULL;

@@ -44,9 +44,9 @@ static int fw_quiet = 0;
 static void
 iptables_insert_gateway_id(char **input)
 {
-	char *token;
+	char *token  = NULL;
+	char *buffer = NULL;
 	const s_config *config;
-	char *buffer;
 
 	if (strstr(*input, "$ID$")==NULL)
 		return;
@@ -218,12 +218,12 @@ iptables_fw_set_authservers(void)
 int
 iptables_fw_init(void)
 {
-	const s_config *config;
-	char * ext_interface = NULL;
-	int gw_port = 0;
-	t_trusted_mac *p;
-	int proxy_port;
-	fw_quiet = 0;
+	fw_quiet       = 0;
+	int gw_port    = 0;
+	int proxy_port = 0;
+	char *ext_interface    = NULL;
+	t_trusted_mac  *p      = NULL;
+	const s_config *config = NULL;
 
 	LOCK_CONFIG();
 	config = config_get_config();
@@ -334,6 +334,8 @@ iptables_fw_init(void)
 
 	/* TCPMSS rule for PPPoE */
 	iptables_do_command("-t filter -A " TABLE_WIFIDOG_WIFI_TO_INTERNET " -o %s -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu", ext_interface);
+	free(ext_interface);  /** 释放ext_interface指向的内存 */
+	ext_interface = NULL;
 
 	iptables_do_command("-t filter -A " TABLE_WIFIDOG_WIFI_TO_INTERNET " -j " TABLE_WIFIDOG_AUTHSERVERS);
 	iptables_fw_set_authservers();

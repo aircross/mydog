@@ -87,7 +87,7 @@ authenticate_client(request *r)
 		return;
 	}
 	
-	mac = safe_strdup(client->mac);
+	mac   = safe_strdup(client->mac);
 	token = safe_strdup(client->token);
 	
 	UNLOCK_CLIENT_LIST();
@@ -106,13 +106,11 @@ authenticate_client(request *r)
 	
 	if (client == NULL)
 	{
-		debug(LOG_ERR, "authenticate_client(): Could not find client node for %s (%s)", r->clientAddr, mac);
-		UNLOCK_CLIENT_LIST();
-		free(token);
-		token = NULL;
-		free(mac);
-		mac = NULL;
-		return;
+	    debug(LOG_ERR, "authenticate_client(): Could not find client node for %s (%s)", r->clientAddr, mac);
+	    UNLOCK_CLIENT_LIST(); /** 返回之前应unlock client list */
+	    free(token);
+	    free(mac);
+	    return;
 	}
 	
 	free(token);
@@ -121,7 +119,7 @@ authenticate_client(request *r)
 	mac = NULL;
 
 	/* Prepare some variables we'll need below */
-	config = config_get_config();
+	config      = config_get_config();
 	auth_server = get_auth_server();
 
 	switch(auth_response.authcode)

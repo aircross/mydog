@@ -89,9 +89,9 @@ int fw_deny(const char *ip, const char *mac, int fw_connection_state)
 char *
 arp_get(const char *req_ip)
 {
-	FILE *proc;
-	char ip[16];
-	char mac[18];
+	FILE *proc   = NULL;
+	char ip[16]  = {0};
+	char mac[18] = {0};
 	char * reply = NULL;
 
 	if (!(proc = fopen("/proc/net/arp", "r")))
@@ -105,9 +105,8 @@ arp_get(const char *req_ip)
 
 	/* Find ip, copy mac in reply */
 	reply = NULL;
-	while (!feof(proc)
-			&& (fscanf(proc, " %15[0-9.] %*s %*s %17[A-Fa-f0-9:] %*s %*s", ip,
-					mac) == 2))
+	while (!feof(proc) &&
+	       (fscanf(proc, " %15[0-9.] %*s %*s %17[A-Fa-f0-9:] %*s %*s", ip, mac) == 2))
 	{
 		if (strcmp(ip, req_ip) == 0)
 		{
@@ -117,6 +116,7 @@ arp_get(const char *req_ip)
 	}
 
 	fclose(proc);
+	proc = NULL;
 
 	return reply;
 }
