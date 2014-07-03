@@ -117,44 +117,48 @@ iptables_do_command(const char *format, ...)
 	static char *
 iptables_compile(const char * table, const char *chain, const t_firewall_rule *rule)
 {
-	char	command[MAX_BUF],
-		*mode;
+	char	command[MAX_BUF] = {0};
+	char  *mode = NULL;
 
 	memset(command, 0, MAX_BUF);
 
-	switch (rule->target){
-	case TARGET_DROP:
-		mode = safe_strdup("DROP");
-		break;
-	case TARGET_REJECT:
-		mode = safe_strdup("REJECT");
-		break;
-	case TARGET_ACCEPT:
-		mode = safe_strdup("ACCEPT");
-		break;
-	case TARGET_LOG:
-		mode = safe_strdup("LOG");
-		break;
-	case TARGET_ULOG:
-		mode = safe_strdup("ULOG");
-		break;
+	switch (rule->target)
+	{
+		case TARGET_DROP:
+			mode = safe_strdup("DROP");
+			break;
+		case TARGET_REJECT:
+			mode = safe_strdup("REJECT");
+			break;
+		case TARGET_ACCEPT:
+			mode = safe_strdup("ACCEPT");
+			break;
+		case TARGET_LOG:
+			mode = safe_strdup("LOG");
+			break;
+		case TARGET_ULOG:
+			mode = safe_strdup("ULOG");
+			break;
 	}
 
 	snprintf(command, sizeof(command),  "-t %s -A %s ",table, chain);
-	if (rule->mask != NULL) {
-		snprintf((command + strlen(command)), (sizeof(command) - 
-					strlen(command)), "-d %s ", rule->mask);
+	if (rule->mask != NULL)
+	{
+		snprintf((command + strlen(command)),
+				(sizeof(command) - strlen(command)), "-d %s ", rule->mask);
 	}
-	if (rule->protocol != NULL) {
-		snprintf((command + strlen(command)), (sizeof(command) -
-					strlen(command)), "-p %s ", rule->protocol);
+	if (rule->protocol != NULL)
+	{
+		snprintf((command + strlen(command)),
+				(sizeof(command) - strlen(command)), "-p %s ", rule->protocol);
 	}
-	if (rule->port != NULL) {
-		snprintf((command + strlen(command)), (sizeof(command) -
-					strlen(command)), "--dport %s ", rule->port);
+	if (rule->port != NULL)
+	{
+		snprintf((command + strlen(command)),
+				(sizeof(command) - strlen(command)), "--dport %s ", rule->port);
 	}
-	snprintf((command + strlen(command)), (sizeof(command) - 
-				strlen(command)), "-j %s", mode);
+	snprintf((command + strlen(command)),
+			(sizeof(command) - strlen(command)), "-j %s", mode);
 
 	free(mode);
 
@@ -178,7 +182,8 @@ iptables_load_ruleset(const char * table, const char *ruleset, const char *chain
 
 	debug(LOG_DEBUG, "Load ruleset %s into table %s, chain %s", ruleset, table, chain);
 
-	for (rule = get_ruleset(ruleset); rule != NULL; rule = rule->next) {
+	for (rule = get_ruleset(ruleset); rule != NULL; rule = rule->next)
+	{
 		cmd = iptables_compile(table, chain, rule);
 		debug(LOG_DEBUG, "Loading rule \"%s\" into table %s, chain %s", cmd, table, chain);
 		iptables_do_command(cmd);
@@ -203,8 +208,10 @@ iptables_fw_set_authservers(void)
 
 	config = config_get_config();
 
-	for (auth_server = config->auth_servers; auth_server != NULL; auth_server = auth_server->next) {
-		if (auth_server->last_ip && strcmp(auth_server->last_ip, "0.0.0.0") != 0) {
+	for (auth_server = config->auth_servers; auth_server != NULL; auth_server = auth_server->next)
+	{
+		if (auth_server->last_ip && strcmp(auth_server->last_ip, "0.0.0.0") != 0)
+		{
 			iptables_do_command("-t filter -A " TABLE_WIFIDOG_AUTHSERVERS " -d %s -j ACCEPT", auth_server->last_ip);
 			iptables_do_command("-t nat -A " TABLE_WIFIDOG_AUTHSERVERS " -d %s -j ACCEPT", auth_server->last_ip);
 		}
