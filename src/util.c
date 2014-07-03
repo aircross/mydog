@@ -323,7 +323,8 @@ get_ext_iface(void)
 	return NULL;
 }
 
-void mark_online() {
+void mark_online()
+{
 	int before;
 	int after;
 
@@ -331,13 +332,15 @@ void mark_online() {
 	time(&last_online_time);
 	after = is_online();
 
-	if (before != after) {
+	if (before != after)
+	{
 		debug(LOG_INFO, "ONLINE status became %s", (after ? "ON" : "OFF"));
 	}
 
 }
 
-void mark_offline() {
+void mark_offline()
+{
 	int before;
 	int after;
 
@@ -345,7 +348,8 @@ void mark_offline() {
 	time(&last_offline_time);
 	after = is_online();
 
-	if (before != after) {
+	if (before != after)
+	{
 		debug(LOG_INFO, "ONLINE status became %s", (after ? "ON" : "OFF"));
 	}
 
@@ -463,7 +467,8 @@ char * get_status_text()
 		snprintf((buffer + len), (sizeof(buffer) - len), "yes (from PID %d)\n", restart_orig_pid);
 		len = strlen(buffer);
 	}
-	else {
+	else
+	{
 		snprintf((buffer + len), (sizeof(buffer) - len), "no\n");
 		len = strlen(buffer);
 	}
@@ -524,11 +529,13 @@ char * get_status_text()
 
 	config = config_get_config();
 
-	if (config->trustedmaclist != NULL) {
+	if (config->trustedmaclist != NULL)
+	{
 		snprintf((buffer + len), (sizeof(buffer) - len), "\nTrusted MAC addresses:\n");
 		len = strlen(buffer);
 
-		for (p = config->trustedmaclist; p != NULL; p = p->next) {
+		for (p = config->trustedmaclist; p != NULL; p = p->next)
+		  {
 			snprintf((buffer + len), (sizeof(buffer) - len), "  %s\n", p->mac);
 			len = strlen(buffer);
 		}
@@ -539,7 +546,8 @@ char * get_status_text()
 
 	LOCK_CONFIG();
 
-	for (auth_server = config->auth_servers; auth_server != NULL; auth_server = auth_server->next) {
+	for (auth_server = config->auth_servers; auth_server != NULL; auth_server = auth_server->next)
+	{
 		snprintf((buffer + len), (sizeof(buffer) - len), "  Host: %s (%s)\n", auth_server->authserv_hostname, auth_server->last_ip);
 		len = strlen(buffer);
 	}
