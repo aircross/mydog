@@ -59,8 +59,8 @@ iptables_insert_gateway_id(char **input)
 	config = config_get_config();
 	safe_asprintf(&buffer, *input, config->gw_interface);
 
-	free(*input);
-	*input=buffer;
+//	free(*input);
+//	*input=buffer;
 }
 
 /** @internal 

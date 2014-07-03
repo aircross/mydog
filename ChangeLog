@@ -1,4 +1,8 @@
 # $Id$
+
+2014-07-03 <exist.wong@gmail.com>
+    * 增加 自动从AuthServer下载配置文件
+
 2013-12-25
 
 
