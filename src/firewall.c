@@ -204,7 +204,9 @@ void fw_sync_with_authserver(void)
 	char		*mac	 = NULL;
 	t_client *p1	 = NULL;
 	t_client	*p2	 = NULL;
-	unsigned long long incoming, outgoing;
+	unsigned long long incoming = 0;
+	unsigned long long outgoing = 0;
+
 	s_config *config = config_get_config();
 
 	if (-1 == iptables_fw_counters_update())
@@ -235,8 +237,10 @@ void fw_sync_with_authserver(void)
 		/* Update the counters on the remote server only if we have an auth server */
 		if (config->auth_servers != NULL)
 		{
-			auth_server_request(&authresponse, REQUEST_TYPE_COUNTERS, ip, mac,
-					token, incoming, outgoing);
+			auth_server_request(&authresponse,
+									REQUEST_TYPE_COUNTERS,
+									ip, mac, token,
+									incoming, outgoing);
 		}
 		LOCK_CLIENT_LIST();
 
@@ -253,8 +257,7 @@ void fw_sync_with_authserver(void)
 				current_time - p1->counters.last_updated,
 				config->checkinterval * config->clienttimeout,
 				current_time);
-			if ( current_time >=
-					(p1->counters.last_updated + (config->checkinterval * config->clienttimeout)) )
+			if ( current_time >= (p1->counters.last_updated + (config->checkinterval * config->clienttimeout)) )
 			{
 				/* Timing out user */
 				debug(LOG_INFO, "%s - Inactive for more than %ld seconds, removing client and denying in firewall",
@@ -336,15 +339,15 @@ void fw_sync_with_authserver(void)
 						break;
 					}/** end switch() */
 				}
-			}
+			}// end else
 		}
 
 		free(token);
-		token = NULL;
 		free(ip);
-		ip = NULL;
 		free(mac);
-		mac = NULL;
+		ip    = NULL;
+		mac   = NULL;
+		token = NULL;
 	}
 	UNLOCK_CLIENT_LIST();
 }

@@ -66,12 +66,12 @@ thread_ping(void *arg)
 static void
 ping(void)
 {
-	ssize_t	numbytes;
-	size_t	totalbytes;
+	ssize_t	numbytes		= 0;
+	size_t	totalbytes	= 0;
 	int		sockfd, nfds, done;
-	char		request[MAX_BUF];
+	char		request[MAX_BUF] = {0};
 	fd_set	readfds;
-	FILE 		*fh;
+	FILE 		*fh = NULL;
 	struct timeval		timeout;
 	unsigned long int sys_uptime  = 0;
 	unsigned int      sys_memfree = 0;

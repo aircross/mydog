@@ -970,15 +970,15 @@ void httpdPrintf(va_alist)
 
 void httpdProcessRequest(httpd *server, request *r)
 {
-	char	dirName[HTTP_MAX_URL],
-			entryName[HTTP_MAX_URL],
-			*cp;
-	httpDir	*dir;
-	httpContent *entry;
+	char	dirName[HTTP_MAX_URL] 	= {0};
+	char	entryName[HTTP_MAX_URL] = {0};
+	char           *cp = NULL;
+	httpDir		  *dir = NULL;
+	httpContent *entry = NULL;
 
 	r->response.responseLength = 0;
 	strncpy(dirName, httpdRequestPath(r), HTTP_MAX_URL);
-	dirName[HTTP_MAX_URL-1]=0;
+	dirName[HTTP_MAX_URL-1] = 0;
 	cp = strrchr(dirName, '/');
 	if (cp == NULL)
 	{

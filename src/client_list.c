@@ -97,7 +97,8 @@ client_list_find(const char *ip, const char *mac)
     t_client         *ptr;
 
     ptr = firstclient;
-    while (NULL != ptr) {
+    while (NULL != ptr)
+    {
         if (0 == strcmp(ptr->ip, ip) && 0 == strcmp(ptr->mac, mac))
             return ptr;
         ptr = ptr->next;
