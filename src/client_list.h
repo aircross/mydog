@@ -15,17 +15,15 @@ typedef struct _t_counters {
 /** Client node for the connected client linked list.
  */
 typedef struct	_t_client {
-  struct	_t_client *next;        /**< @brief Pointer to the next client */
-	char	*ip;			/**< @brief Client Ip address */
-	char	*mac;			/**< @brief Client Mac address */
-	char	*token;			/**< @brief Client token */
-	unsigned int fw_connection_state; /**< @brief Connection state in the
-						     firewall */
+  struct	_t_client *next;  /**< @brief Pointer to the next client */
+	char	*ip;					/**< @brief Client Ip address */
+	char	*mac;					/**< @brief Client Mac address */
+	char	*token;				/**< @brief Client token */
+	unsigned int fw_connection_state; /**< @brief Connection state in the firewall */
 	int	fd;			/**< @brief Client HTTP socket (valid only
 					     during login before one of the
 					     _http_* function is called */
-	t_counters	counters;	/**< @brief Counters for input/output of
-					     the client. */
+	t_counters	counters;	/**< @brief Counters for input/output of the client. */
 } t_client;
 
 /** @brief Get the first element of the list of connected clients
