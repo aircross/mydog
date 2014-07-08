@@ -55,8 +55,8 @@
 char *httpdUrlEncode(str)
 			const char	*str;
 {
-	char    *new,
-	*cp;
+	char *new;
+	char *cp;
 
 	new = (char *)_httpd_escape(str);
 	if (new == NULL)
@@ -170,12 +170,13 @@ int httpdAddVariable(request *r, const char *name, const char *value)
 
 	while(*name == ' ' || *name == '\t')
 		name++;
+
 	newVar = malloc(sizeof(httpVar));
 	bzero(newVar, sizeof(httpVar));
-	newVar->name = strdup(name);
+	newVar->name  = strdup(name);
 	newVar->value = strdup(value);
-	lastVar = NULL;
-	curVar = r->variables;
+	lastVar       = NULL;
+	curVar        = r->variables;
 	while(curVar)
 	{
 		if (strcmp(curVar->name, name) != 0)

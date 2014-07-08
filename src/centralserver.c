@@ -45,14 +45,15 @@ auth_server_request(  t_authresponse *authresponse,
 			    unsigned long long int incoming,
 			    unsigned long long int outgoing)
 {
-	int sockfd;
+	int 		sockfd;
 	ssize_t	numbytes;
-	size_t totalbytes;
-	char buf[MAX_BUF];
-	char *tmp;
-        char *safe_token;
-	int done, nfds;
-	fd_set			readfds;
+	size_t 	totalbytes;
+	char 		buf[MAX_BUF];
+	char 		*tmp;
+   char 		*safe_token;
+	int 		done;
+	int 		nfds;
+	fd_set	readfds;
 	struct timeval		timeout;
 	t_auth_serv	*auth_server = NULL;
 	auth_server = get_auth_server();
@@ -208,10 +209,9 @@ int _connect_auth_server(int level)
 {
 	int 	num_servers 		= 0;
 	char *hostname 			= NULL;
-	char *popular_servers[] = {
-										POPULAR_SERVERS_0,
-										POPULAR_SERVERS_1,
-										NULL };
+	char *popular_servers[] = { POPULAR_SERVERS_0,
+										 POPULAR_SERVERS_1,
+										 NULL };
 	s_config 		*config 			= config_get_config();
 	t_auth_serv 	*auth_server 	= NULL;
 	struct in_addr *host_addr;

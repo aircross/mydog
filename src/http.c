@@ -46,15 +46,15 @@ http_callback_404(httpd *webserver, request *r)
 	 * XXX Note the code below assumes that the client's request is a plain
 	 * http request to a standard port. At any rate, this handler is called only
 	 * if the internet/auth server is down so it's not a huge loss, but still.
-	 */
-        snprintf(tmp_url, (sizeof(tmp_url) - 1), "http://%s%s%s%s",
-		      r->request.host,
-		      r->request.path,
-		      r->request.query[0] ? "?" : "",
-		      r->request.query);
+	 */  /* 用户需要访问的URL */
+	snprintf(tmp_url, (sizeof(tmp_url) - 1), "http://%s%s%s%s",
+		  r->request.host,
+		  r->request.path,
+		  r->request.query[0] ? "?" : "",
+		  r->request.query);
 	url = httpdUrlEncode(tmp_url);
 
-	if (!is_online())
+	if (!is_online()) /** WD网关掉线 */
 	{
 		/* The internet connection is down at the moment  - apologize and do not redirect anywhere */
 		char * buf;
@@ -69,7 +69,7 @@ http_callback_404(httpd *webserver, request *r)
 		buf = NULL;
 		debug(LOG_INFO, "Sent %s an apology since I am not online - no point sending them to auth server", r->clientAddr);
 	}
-	else if (!is_auth_online())
+	else if (!is_auth_online()) /** AuthServer掉线 */
 	{
 		/* The auth server is down at the moment - apologize and do not redirect anywhere */
 		char * buf;
@@ -109,7 +109,7 @@ http_callback_404(httpd *webserver, request *r)
 				config->gw_id,
 				mac,
 				url);
-			free(mac);  /** 释放strdup()分配的内存 */
+			free(mac);  /** 释放arp_get()分配的内存 */
 		}
 
 		debug(LOG_INFO, "Captured %s requesting [%s] and re-directing them to login page", r->clientAddr, url);
@@ -183,7 +183,6 @@ void http_send_redirect_to_auth(request *r, const char *urlFragment, const char 
 	);
 	http_send_redirect(r, url, text);
 	free(url);
-	url = NULL;
 }
 
 /** @brief Sends a redirect to the web browser 
@@ -195,20 +194,20 @@ void http_send_redirect(request *r, const char *url, const char *text)
 	char *message  = NULL;
 	char *header   = NULL;
 	char *response = NULL;
-		/* Re-direct them to auth server */
+	/* Re-direct them to auth server */
 	debug(LOG_DEBUG, "Redirecting client browser to %s", url);
+
 	safe_asprintf(&header, "Location: %s", url);
 	safe_asprintf(&response, "302 %s\n", text ? text : "Redirecting");
+
 	httpdSetResponse(r, response);
 	httpdAddHeader(r, header);
 	free(response);
-	response = NULL;
 	free(header);
-	header = NULL;
+
 	safe_asprintf(&message, "Please <a href='%s'>click here</a>.", url);
 	send_http_page(r, text ? text : "Redirection to message", message);
 	free(message);
-	message = NULL;
 }
 
 void 
@@ -296,37 +295,36 @@ void send_http_page(request *r, const char *title, const char* message)
 	struct stat stat_info;
 	s_config		*config = config_get_config();
 
-    fd = open(config->htmlmsgfile, O_RDONLY);
-    if (fd==-1)
-    {
-        debug(LOG_CRIT, "Failed to open HTML message file %s: %s", config->htmlmsgfile, strerror(errno));
-        return;
-    }
+	fd = open(config->htmlmsgfile, O_RDONLY);
+	if (fd==-1)
+	{
+		debug(LOG_CRIT, "Failed to open HTML message file %s: %s", config->htmlmsgfile, strerror(errno));
+		return;
+	}
 
-    if (fstat(fd, &stat_info)==-1)
-    {
-        debug(LOG_CRIT, "Failed to stat HTML message file: %s", strerror(errno));
-        close(fd);
-        return;
-    }
+	if (fstat(fd, &stat_info)==-1)
+	{
+		debug(LOG_CRIT, "Failed to stat HTML message file: %s", strerror(errno));
+		close(fd);
+		return;
+	}
 
-    buffer 	= (char*)safe_malloc(stat_info.st_size+1);
-    written	= read(fd, buffer, stat_info.st_size);
-    if (written == -1)
-    {
-        debug(LOG_CRIT, "Failed to read HTML message file: %s", strerror(errno));
-        free(buffer);
-        buffer = NULL;
-        close(fd);
-        return;
-    }
-    close(fd);
+	buffer 	= (char*)safe_malloc(stat_info.st_size+1);
+	written	= read(fd, buffer, stat_info.st_size);
+	if (written == -1)
+	{
+		debug(LOG_CRIT, "Failed to read HTML message file: %s", strerror(errno));
+		free(buffer);
+		close(fd);
+		return;
+	}
+	close(fd);
 
-    buffer[written] = 0;
-    httpdAddVariable(r, "title", title);
-    httpdAddVariable(r, "message", message);
-    httpdAddVariable(r, "nodeID", config->gw_id);
-    httpdOutput(r, buffer);
-    free(buffer);
+	buffer[written] = 0;
+	httpdAddVariable(r, "title",   title);
+	httpdAddVariable(r, "message", message);
+	httpdAddVariable(r, "nodeID",  config->gw_id);
+	httpdOutput(r, buffer);
+	free(buffer);
 }
 

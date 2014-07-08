@@ -690,9 +690,14 @@ char *_httpd_escape(str)
     char * q;
     char * result;
     int unacceptable = 0;
-    for(p=str; *p; p++)
-        if (!ACCEPTABLE((unsigned char)*p))
-                unacceptable +=2;
+
+    for(p = str; *p; p++)
+    {
+    	if (!ACCEPTABLE((unsigned char)*p))
+    	{
+    		unacceptable += 2;
+    	}
+    }
     result = (char *) malloc(p-str + unacceptable + 1);
     bzero(result,(p-str + unacceptable + 1));
 
