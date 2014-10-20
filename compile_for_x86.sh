@@ -1,0 +1,1 @@
+./shell/compile_for_x86.sh

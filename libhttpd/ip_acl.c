@@ -187,10 +187,11 @@ httpAcl *httpdAddAcl(server, acl, cidr, action)
 
 int httpdCheckAcl(httpd *server, request *r, httpAcl *acl)
 {
-	httpAcl	*cur;
-	int	addr, len,
-		res,
-		action;
+	httpAcl	*cur = NULL;
+	int		addr = 0;
+	int      len  = 0;
+	int 		res  = 0;
+	int      action = 0;
 
 
 	action = HTTP_ACL_DENY;

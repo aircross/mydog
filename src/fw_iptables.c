@@ -44,23 +44,23 @@ static int fw_quiet = 0;
 static void
 iptables_insert_gateway_id(char **input)
 {
-	char *token;
+	char *token  = NULL;
+	char *buffer = NULL;
 	const s_config *config;
-	char *buffer;
 
 	if (strstr(*input, "$ID$")==NULL)
 		return;
 
-
 	while ((token=strstr(*input, "$ID$"))!=NULL)
-		/* This string may look odd but it's standard POSIX and ISO C */
+	{	/* This string may look odd but it's standard POSIX and ISO C */
 		memcpy(token, "%1$s", 4);
+	}
 
 	config = config_get_config();
 	safe_asprintf(&buffer, *input, config->gw_interface);
 
-	free(*input);
-	*input=buffer;
+//	free(*input);
+//	*input=buffer;
 }
 
 /** @internal 
@@ -79,6 +79,7 @@ iptables_do_command(const char *format, ...)
 
 	safe_asprintf(&cmd, "iptables %s", fmt_cmd);
 	free(fmt_cmd);
+	fmt_cmd = NULL;
 
 	iptables_insert_gateway_id(&cmd);
 
@@ -86,15 +87,21 @@ iptables_do_command(const char *format, ...)
 
 	rc = execute(cmd, fw_quiet);	/** 调用exec执行一次shell命令	*/
 
-	if (rc!=0) {
+	if (rc!=0)
+	{
 		// If quiet, do not display the error
 		if (fw_quiet == 0)
+		{
 			debug(LOG_ERR, "iptables command failed(%d): %s", rc, cmd);
+		}
 		else if (fw_quiet == 1)
+		{
 			debug(LOG_DEBUG, "iptables command failed(%d): %s", rc, cmd);
+		}
 	}
 
 	free(cmd);
+	cmd = NULL;
 
 	return rc;
 }
@@ -110,44 +117,48 @@ iptables_do_command(const char *format, ...)
 	static char *
 iptables_compile(const char * table, const char *chain, const t_firewall_rule *rule)
 {
-	char	command[MAX_BUF],
-		*mode;
+	char	command[MAX_BUF] = {0};
+	char  *mode = NULL;
 
 	memset(command, 0, MAX_BUF);
 
-	switch (rule->target){
-	case TARGET_DROP:
-		mode = safe_strdup("DROP");
-		break;
-	case TARGET_REJECT:
-		mode = safe_strdup("REJECT");
-		break;
-	case TARGET_ACCEPT:
-		mode = safe_strdup("ACCEPT");
-		break;
-	case TARGET_LOG:
-		mode = safe_strdup("LOG");
-		break;
-	case TARGET_ULOG:
-		mode = safe_strdup("ULOG");
-		break;
+	switch (rule->target)
+	{
+		case TARGET_DROP:
+			mode = safe_strdup("DROP");
+			break;
+		case TARGET_REJECT:
+			mode = safe_strdup("REJECT");
+			break;
+		case TARGET_ACCEPT:
+			mode = safe_strdup("ACCEPT");
+			break;
+		case TARGET_LOG:
+			mode = safe_strdup("LOG");
+			break;
+		case TARGET_ULOG:
+			mode = safe_strdup("ULOG");
+			break;
 	}
 
 	snprintf(command, sizeof(command),  "-t %s -A %s ",table, chain);
-	if (rule->mask != NULL) {
-		snprintf((command + strlen(command)), (sizeof(command) - 
-					strlen(command)), "-d %s ", rule->mask);
+	if (rule->mask != NULL)
+	{
+		snprintf((command + strlen(command)),
+				(sizeof(command) - strlen(command)), "-d %s ", rule->mask);
 	}
-	if (rule->protocol != NULL) {
-		snprintf((command + strlen(command)), (sizeof(command) -
-					strlen(command)), "-p %s ", rule->protocol);
+	if (rule->protocol != NULL)
+	{
+		snprintf((command + strlen(command)),
+				(sizeof(command) - strlen(command)), "-p %s ", rule->protocol);
 	}
-	if (rule->port != NULL) {
-		snprintf((command + strlen(command)), (sizeof(command) -
-					strlen(command)), "--dport %s ", rule->port);
+	if (rule->port != NULL)
+	{
+		snprintf((command + strlen(command)),
+				(sizeof(command) - strlen(command)), "--dport %s ", rule->port);
 	}
-	snprintf((command + strlen(command)), (sizeof(command) - 
-				strlen(command)), "-j %s", mode);
+	snprintf((command + strlen(command)),
+			(sizeof(command) - strlen(command)), "-j %s", mode);
 
 	free(mode);
 
@@ -171,7 +182,8 @@ iptables_load_ruleset(const char * table, const char *ruleset, const char *chain
 
 	debug(LOG_DEBUG, "Load ruleset %s into table %s, chain %s", ruleset, table, chain);
 
-	for (rule = get_ruleset(ruleset); rule != NULL; rule = rule->next) {
+	for (rule = get_ruleset(ruleset); rule != NULL; rule = rule->next)
+	{
 		cmd = iptables_compile(table, chain, rule);
 		debug(LOG_DEBUG, "Loading rule \"%s\" into table %s, chain %s", cmd, table, chain);
 		iptables_do_command(cmd);
@@ -196,8 +208,10 @@ iptables_fw_set_authservers(void)
 
 	config = config_get_config();
 
-	for (auth_server = config->auth_servers; auth_server != NULL; auth_server = auth_server->next) {
-		if (auth_server->last_ip && strcmp(auth_server->last_ip, "0.0.0.0") != 0) {
+	for (auth_server = config->auth_servers; auth_server != NULL; auth_server = auth_server->next)
+	{
+		if (auth_server->last_ip && strcmp(auth_server->last_ip, "0.0.0.0") != 0)
+		{
 			iptables_do_command("-t filter -A " TABLE_WIFIDOG_AUTHSERVERS " -d %s -j ACCEPT", auth_server->last_ip);
 			iptables_do_command("-t nat -A " TABLE_WIFIDOG_AUTHSERVERS " -d %s -j ACCEPT", auth_server->last_ip);
 		}
@@ -208,26 +222,30 @@ iptables_fw_set_authservers(void)
 /**
  * Initialize the firewall rules
 */
-	int
+int
 iptables_fw_init(void)
 {
-	const s_config *config;
-	char * ext_interface = NULL;
-	int gw_port = 0;
-	t_trusted_mac *p;
-	int proxy_port;
-	fw_quiet = 0;
+	fw_quiet       = 0;
+	int gw_port    = 0;
+	int proxy_port = 0;
+	char *ext_interface    = NULL;
+	t_trusted_mac  *p      = NULL;
+	const s_config *config = NULL;
 
 	LOCK_CONFIG();
 	config = config_get_config();
 	gw_port = config->gw_port;
-	if (config->external_interface) {
+	if (config->external_interface)
+	{
 		ext_interface = safe_strdup(config->external_interface);
-	} else {
+	}
+	else
+	{
 		ext_interface = get_ext_iface();
 	}
 
-	if (ext_interface == NULL) {
+	if (ext_interface == NULL)
+	{
 		UNLOCK_CONFIG();
 		debug(LOG_ERR, "FATAL: no external interface");
 		return 0;
@@ -249,7 +267,9 @@ iptables_fw_init(void)
 	iptables_do_command("-t mangle -I POSTROUTING 1 -o %s -j " TABLE_WIFIDOG_INCOMING, config->gw_interface);
 
 	for (p = config->trustedmaclist; p != NULL; p = p->next)
+	{
 		iptables_do_command("-t mangle -A " TABLE_WIFIDOG_TRUSTED " -m mac --mac-source %s -j MARK --set-mark %d", p->mac, FW_MARK_KNOWN);
+	}
 
 	/*
 	 *
@@ -273,7 +293,8 @@ iptables_fw_init(void)
 
 	iptables_do_command("-t nat -A " TABLE_WIFIDOG_OUTGOING " -j " TABLE_WIFIDOG_WIFI_TO_INTERNET);
 
-	if((proxy_port=config_get_config()->proxy_port) != 0){
+	if((proxy_port=config_get_config()->proxy_port) != 0)
+	{
 		debug(LOG_DEBUG,"Proxy port set, setting proxy rule");
 		iptables_do_command("-t nat -A " TABLE_WIFIDOG_WIFI_TO_INTERNET " -p tcp --dport 80 -m mark --mark 0x%u -j REDIRECT --to-port %u", FW_MARK_KNOWN, proxy_port);
 		iptables_do_command("-t nat -A " TABLE_WIFIDOG_WIFI_TO_INTERNET " -p tcp --dport 80 -m mark --mark 0x%u -j REDIRECT --to-port %u", FW_MARK_PROBATION, proxy_port);
@@ -320,6 +341,8 @@ iptables_fw_init(void)
 
 	/* TCPMSS rule for PPPoE */
 	iptables_do_command("-t filter -A " TABLE_WIFIDOG_WIFI_TO_INTERNET " -o %s -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu", ext_interface);
+	free(ext_interface);  /** 释放ext_interface指向的内存 */
+	ext_interface = NULL;
 
 	iptables_do_command("-t filter -A " TABLE_WIFIDOG_WIFI_TO_INTERNET " -j " TABLE_WIFIDOG_AUTHSERVERS);
 	iptables_fw_set_authservers();
@@ -349,7 +372,7 @@ iptables_fw_init(void)
  * This is used when we do a clean shutdown of WiFiDog and when it starts to make
  * sure there are no rules left over
  */
-	int
+int
 iptables_fw_destroy(void)
 {
 	fw_quiet = 1;
@@ -427,15 +450,15 @@ int
 iptables_fw_destroy_mention(
 		const char * table,
 		const char * chain,
-		const char * mention
-		) {
+		const char * mention)
+{
 	FILE *p = NULL;
-	char *command = NULL;
+	char *command  = NULL;
 	char *command2 = NULL;
-	char line[MAX_BUF];
-	char rulenum[10];
+	char line[MAX_BUF] = {0};
+	char rulenum[10]   = {0};
 	char *victim = safe_strdup(mention);
-	int deleted = 0;
+	int deleted  = 0;
 
 	iptables_insert_gateway_id(&victim);
 
@@ -485,14 +508,15 @@ iptables_fw_destroy_mention(
 }
 
 /** Set if a specific client has access through the firewall */
-	int
+int
 iptables_fw_access(fw_access_t type, const char *ip, const char *mac, int tag)
 {
 	int rc;
 
 	fw_quiet = 0;
 
-	switch(type) {
+	switch(type)
+	{
 		case FW_ACCESS_ALLOW:
 			iptables_do_command("-t mangle -A " TABLE_WIFIDOG_OUTGOING " -s %s -m mac --mac-source %s -j MARK --set-mark %d", ip, mac, tag);
 			rc = iptables_do_command("-t mangle -A " TABLE_WIFIDOG_INCOMING " -d %s -j ACCEPT", ip);
@@ -513,12 +537,12 @@ iptables_fw_access(fw_access_t type, const char *ip, const char *mac, int tag)
 	int
 iptables_fw_counters_update(void)
 {
-	FILE *output;
-	char *script,
-	     ip[16],
-	     rc;
+	FILE *output = NULL;
+	char *script = NULL;
+	char ip[16]  = {0};
+	char rc;
 	unsigned long long int counter;
-	t_client *p1;
+	t_client *p1 = NULL;
 	struct in_addr tempaddr;
 
 	/* Look for outgoing traffic */
@@ -577,7 +601,8 @@ iptables_fw_counters_update(void)
 	iptables_insert_gateway_id(&script);
 	output = popen(script, "r");
 	free(script);
-	if (!output) {
+	if (!output)
+	{
 		debug(LOG_ERR, "popen(): %s", strerror(errno));
 		return -1;
 	}

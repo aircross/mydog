@@ -48,7 +48,7 @@ int _httpd_net_read(sock, buf, len)
 	/* XXX Select based IO */
 
 	int		nfds;
-	fd_set		readfds;
+	fd_set	readfds;
 	struct timeval	timeout;
 	
 	FD_ZERO(&readfds);
@@ -84,8 +84,7 @@ int _httpd_readChar(request *r, char *cp)
 	if (r->readBufRemain == 0)
 	{
 		bzero(r->readBuf, HTTP_READ_BUF_LEN + 1);
-		r->readBufRemain = _httpd_net_read(r->clientSock, 
-			r->readBuf, HTTP_READ_BUF_LEN);
+		r->readBufRemain = _httpd_net_read(r->clientSock, r->readBuf, HTTP_READ_BUF_LEN);
 		if (r->readBufRemain < 1)
 			return(0);
 		r->readBuf[r->readBufRemain] = 0;
@@ -99,13 +98,9 @@ int _httpd_readChar(request *r, char *cp)
 
 int _httpd_readLine(request *r, char *destBuf, int len)
 {
-	char	curChar,
-		*dst;
-	int	count;
-	
-
-	count = 0;
-	dst = destBuf;
+	char curChar;
+	char *dst = destBuf;
+	int  count = 0;
 	while(count < len)
 	{
 		if (_httpd_readChar(r, &curChar) < 1)
@@ -695,9 +690,14 @@ char *_httpd_escape(str)
     char * q;
     char * result;
     int unacceptable = 0;
-    for(p=str; *p; p++)
-        if (!ACCEPTABLE((unsigned char)*p))
-                unacceptable +=2;
+
+    for(p = str; *p; p++)
+    {
+    	if (!ACCEPTABLE((unsigned char)*p))
+    	{
+    		unacceptable += 2;
+    	}
+    }
     result = (char *) malloc(p-str + unacceptable + 1);
     bzero(result,(p-str + unacceptable + 1));
 

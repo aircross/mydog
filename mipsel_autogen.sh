@@ -1,0 +1,1 @@
+./shell/mipsel_autogen.sh

@@ -23,16 +23,18 @@
 void
 thread_httpd(void *args)
 {
-	void	**params;
-	httpd	*webserver;
-	request	*r;
+	void	**params   = NULL;
+	httpd	*webserver = NULL;
+	request	*r      = NULL;
 	
 	params = (void **)args;
 	webserver = *params;
 	r = *(params + 1);
-	free(params); /* XXX We must release this ourselves. */
+//	free(params); /* XXX We must release this ourselves. <在此处释放params (webserver) ?!>*/
+	/** 此处关于free(params)还有问题 */
 	
-	if (httpdReadRequest(webserver, r) == 0) {
+	if (httpdReadRequest(webserver, r) == 0)
+	{
 		/*
 		 * We read the request fine
 		 */
@@ -41,7 +43,8 @@ thread_httpd(void *args)
 		httpdProcessRequest(webserver, r);
 		debug(LOG_DEBUG, "Returned from httpdProcessRequest() for %s", r->clientAddr);
 	}
-	else {
+	else
+	{
 		debug(LOG_DEBUG, "No valid request received from %s", r->clientAddr);
 	}
 	debug(LOG_DEBUG, "Closing connection with %s", r->clientAddr);

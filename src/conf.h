@@ -20,23 +20,24 @@
 	#define DEFAULT_HTMLMSGFILE SYSCONFDIR"/wifidog-msg.html"
 #endif	
 
-#define CONFIGFILE_FROM_SERVER 	"/tmp/dog.conf"			/** 从服务器获得配置文件的存放位置		*/
+#define CONFIGFILE_SAVA_PATH 	"/tmp/.dog.conf"			/** 从服务器获得配置文件的存放位置		*/
+#define REQ_PATH					"/wd_conf/wifi_conf.php"
 //#define CONFIGFILE_URL			"http://ServerName/node_config.php?node_id=XXX&platform=XX"
-#define CONFIGFILE_URL 				"http://192.168.10.110/wd_conf/wd_fc20.conf"	   /** 获取配置文件的URL				 	*/
-//#define CONFIGFILE_URL 				"192.168.10.110/wd_conf/wd_hg255d.conf"
-#define PORT							80
+//#define CONFIGFILE_URL 			"http://192.168.10.110/wd_conf/wd_fc20.conf"	   /** 获取配置文件的URL				 	*/
+//#define CONFIGFILE_URL 			"http://192.168.1.222/wd_conf/wd_hg255d.conf"
+#define CONFIGGILE_SERVER_PORT	80
 #define MYNAME							"WiFiDog Gateway"
-//#define VERSION						"0.0"
-#define HTTP_MAX_BUF					10240
+#define HTTP_MAX_BUF			10240			/** 10K, wd_hg255d.conf size  */
 
-#define DEFAULT_DAEMON 				1
+#define DEFAULT_DAEMON 			1
 #define DEFAULT_DEBUGLEVEL 		LOG_INFO
 #define DEFAULT_HTTPDMAXCONN 		100
-#define DEFAULT_GATEWAYID 			"default"			/** 默认的NODE ID */
+#define DEFAULT_GATEWAYID 		"default"			/** 默认的NODE ID */
 #define DEFAULT_GATEWAYPORT 		2060
-#define DEFAULT_HTTPDNAME 			"WiFiDog"
+#define DEFAULT_HTTPDNAME 		"WiFiDog"
 #define DEFAULT_CLIENTTIMEOUT 	12						/** 根据需求 			*/
 #define DEFAULT_CHECKINTERVAL 	600					/** 修改了这两个选项 */
+#define DEFAULT_CHKUP_INTERVAL	900					/** 新增配置选项： 检查配置文件更新的时间间隔 */
 #define DEFAULT_LOG_SYSLOG 		0
 #define DEFAULT_SYSLOG_FACILITY 	LOG_DAEMON
 #define DEFAULT_WDCTL_SOCK 		"/tmp/wdctl.sock"
@@ -90,9 +91,9 @@ typedef enum {
  */
 typedef struct _firewall_rule_t {
     t_firewall_target target;	/**< @brief t_firewall_target */
-    char *protocol;		/**< @brief tcp, udp, etc ... */
-    char *port;			/**< @brief Port to block/allow */
-    char *mask;			/**< @brief Mask for the rule *destination* */
+    char *protocol;				/**< @brief tcp, udp, etc ... */
+    char *port;					/**< @brief Port to block/allow */
+    char *mask;					/**< @brief Mask for the rule *destination* */
     struct _firewall_rule_t *next;
 } t_firewall_rule;
 
@@ -117,39 +118,32 @@ typedef struct _trusted_mac_t {
  * Configuration structure
  */
 typedef struct {
-    char configfile[255];	/**< @brief name of the config file */
-    char *htmlmsgfile;		/**< @brief name of the HTML file used for messages */
-    char *wdctl_sock;		/**< @brief wdctl path to socket */
-    char *internal_sock;		/**< @brief internal path to socket */
-    int daemon;			/**< @brief if daemon > 0, use daemon mode */
-    int debuglevel;		/**< @brief Debug information verbosity */
-    char *external_interface;	/**< @brief External network interface name for
-				     firewall rules */
-    char *gw_id;		/**< @brief ID of the Gateway, sent to central
-				     server */
-    char *gw_interface;		/**< @brief Interface we will accept connections on */
-    char *gw_address;		/**< @brief Internal IP address for our web
-				     server */
-    int gw_port;		/**< @brief Port the webserver will run on */
+    char configfile[255];				/**< @brief name of the config file */
+    char *htmlmsgfile;					/**< @brief name of the HTML file used for messages */
+    char *wdctl_sock;					/**< @brief wdctl path to socket */
+    char *internal_sock;				/**< @brief internal path to socket */
+    int daemon;							/**< @brief if daemon > 0, use daemon mode */
+    int debuglevel;						/**< @brief Debug information verbosity */
+    char *external_interface;			/**< @brief External network interface name for firewall rules */
+    char *gw_id;							/**< @brief ID of the Gateway, sent to central server */
+    char *gw_interface;					/**< @brief Interface we will accept connections on */
+    char *gw_address;					/**< @brief Internal IP address for our web server */
+    int gw_port;							/**< @brief Port the webserver will run on */
     
-    t_auth_serv	*auth_servers;	/**< @brief Auth servers list */
-    char *httpdname;		/**< @brief Name the web server will return when
-				     replying to a request */
-    int httpdmaxconn;		/**< @brief Used by libhttpd, not sure what it
-				     does */
-    char *httpdrealm;		/**< @brief HTTP Authentication realm */
-    char *httpdusername;	/**< @brief Username for HTTP authentication */
-    char *httpdpassword;	/**< @brief Password for HTTP authentication */
-    int clienttimeout;		/**< @brief How many CheckIntervals before a client
-				     must be re-authenticated */
-    int checkinterval;		/**< @brief Frequency the the client timeout check
-				     thread will run. */
-    int log_syslog;		/**< @brief boolean, wether to log to syslog */
-    int syslog_facility;	/**< @brief facility to use when using syslog for
-				     logging */
-    int proxy_port;		/**< @brief Transparent proxy port (0 to disable) */
+    t_auth_serv	*auth_servers;	   /**< @brief Auth servers list */
+    char *httpdname;		   		   /**< @brief Name the web server will return when replying to a request */
+    int  httpdmaxconn;				   /**< @brief Used by libhttpd, not sure what it does */
+    char *httpdrealm;	            /**< @brief HTTP Authentication realm */
+    char *httpdusername;	         /**< @brief Username for HTTP authentication */
+    char *httpdpassword;	         /**< @brief Password for HTTP authentication */
+    int clienttimeout;		         /**< @brief How many CheckIntervals before a client must be re-authenticated */
+    int checkinterval;		         /**< @brief Frequency the the client timeout check thread will run. */
+    int chkupinterval;              /**< @brief 检查配置文件的时间间隔 2014-06-30 11:50 */
+    int log_syslog;		            /**< @brief boolean, wether to log to syslog */
+    int syslog_facility;	         /**< @brief facility to use when using syslog for  logging */
+    int proxy_port;		            /**< @brief Transparent proxy port (0 to disable) */
     t_firewall_ruleset	*rulesets;	/**< @brief firewall rules */
-    t_trusted_mac *trustedmaclist; /**< @brief list of trusted macs */
+    t_trusted_mac *trustedmaclist;  /**< @brief list of trusted macs */
 } s_config;
 
 /** @brief Get the current gateway configuration */
@@ -182,11 +176,32 @@ void parse_trusted_mac_list(const char *);
  * 从服务器下载配置文件
  */
 int get_config_from_server(const char* url, const char* save_path);
+int
+get_config_from_server_2(const t_auth_serv *auth_server, const char* path, const char* save_path);
 
 static long ret_file_size(char *recv_buf);
 
 static struct in_addr*
 get_http_server_addr(const char *hostname);
+
+/**
+ *  生成URL： http://servername/Path/to/file.php?id=nodeid
+ *  args: id=nodeid
+ */
+char  *create_request(const t_auth_serv *auth_server, const char* path, const char** args);
+
+/**
+ * 计算一个无符号整数的位数
+ */
+unsigned int
+get_digits(unsigned int number);
+
+/**
+ * 获取本地CPU型号
+ */
+char *get_platform(void);
+
+
 
 #define LOCK_CONFIG() do { \
 	debug(LOG_DEBUG, "Locking config"); \

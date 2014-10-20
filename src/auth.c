@@ -70,8 +70,8 @@ authenticate_client(request *r)
 {
 	t_client	*client;
 	t_authresponse	auth_response;
-	char	*mac,
-		*token;
+	char	*mac = NULL;
+	char	*token = NULL;
 	char *urlFragment = NULL;
 	s_config	*config = NULL;
 	t_auth_serv	*auth_server = NULL;
@@ -80,13 +80,14 @@ authenticate_client(request *r)
 
 	client = client_list_find_by_ip(r->clientAddr);
 
-	if (client == NULL) {
+	if (client == NULL)
+	{
 		debug(LOG_ERR, "authenticate_client(): Could not find client for %s", r->clientAddr);
 		UNLOCK_CLIENT_LIST();
 		return;
 	}
 	
-	mac = safe_strdup(client->mac);
+	mac   = safe_strdup(client->mac);
 	token = safe_strdup(client->token);
 	
 	UNLOCK_CLIENT_LIST();
@@ -103,22 +104,26 @@ authenticate_client(request *r)
 	/* can't trust the client to still exist after n seconds have passed */
 	client = client_list_find(r->clientAddr, mac);
 	
-	if (client == NULL) {
-		debug(LOG_ERR, "authenticate_client(): Could not find client node for %s (%s)", r->clientAddr, mac);
-		UNLOCK_CLIENT_LIST();
-		free(token);
-		free(mac);
-		return;
+	if (client == NULL)
+	{
+	    debug(LOG_ERR, "authenticate_client(): Could not find client node for %s (%s)", r->clientAddr, mac);
+	    UNLOCK_CLIENT_LIST(); /** 返回之前应unlock client list */
+	    free(token);
+	    free(mac);
+	    return;
 	}
 	
 	free(token);
+	token = NULL;
 	free(mac);
+	mac = NULL;
 
 	/* Prepare some variables we'll need below */
-	config = config_get_config();
+	config      = config_get_config();
 	auth_server = get_auth_server();
 
-	switch(auth_response.authcode) {
+	switch(auth_response.authcode)
+	{
 
 	case AUTH_ERROR:
 		/* Error talking to central server */
@@ -136,6 +141,7 @@ authenticate_client(request *r)
 		);
 		http_send_redirect_to_auth(r, urlFragment, "Redirect to denied message");
 		free(urlFragment);
+		urlFragment = NULL;
 		break;
 
     case AUTH_VALIDATION:
@@ -151,7 +157,8 @@ authenticate_client(request *r)
 		);
 		http_send_redirect_to_auth(r, urlFragment, "Redirect to activate message");
 		free(urlFragment);
-	    break;
+		urlFragment = NULL;
+	   break;
 
     case AUTH_ALLOWED:
 		/* Logged in successfully as a regular account */
@@ -159,14 +166,15 @@ authenticate_client(request *r)
 				"adding to firewall and redirecting them to portal", client->token, client->ip, client->mac);
 		client->fw_connection_state = FW_MARK_KNOWN;
 		fw_allow(client->ip, client->mac, FW_MARK_KNOWN);
-        served_this_session++;
+      served_this_session++;
 		safe_asprintf(&urlFragment, "%sgw_id=%s",
 			auth_server->authserv_portal_script_path_fragment,
 			config->gw_id
 		);
 		http_send_redirect_to_auth(r, urlFragment, "Redirect to portal");
 		free(urlFragment);
-	    break;
+		urlFragment = NULL;
+	   break;
 
     case AUTH_VALIDATION_FAILED:
 		 /* Client had X minutes to validate account by email and didn't = too late */
@@ -178,12 +186,13 @@ authenticate_client(request *r)
 		);
 		http_send_redirect_to_auth(r, urlFragment, "Redirect to failed validation message");
 		free(urlFragment);
-	    break;
+		urlFragment = NULL;
+		break;
 
     default:
 		debug(LOG_WARNING, "I don't know what the validation code %d means for token %s from %s at %s - sending error message", auth_response.authcode, client->token, client->ip, client->mac);
 		send_http_page(r, "Internal Error", "We can not validate your request at this time");
-	    break;
+	   break;
 
 	}
 

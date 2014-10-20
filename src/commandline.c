@@ -50,9 +50,9 @@ usage(void)
  * also populates restartargv
  */
 void parse_commandline(int argc, char **argv) {
-    int c;
-	 int skiponrestart;		/** wdctl restart时，是否使用原来的参数的标志位 0保留，非0不再使用 */
-	 int i;
+    int c = -1;
+	 int skiponrestart = 0;		/** wdctl restart时，是否使用原来的参数的标志位 0保留，非0不再使用 */
+	 int i = 0;
 
     s_config *config = config_get_config();
 

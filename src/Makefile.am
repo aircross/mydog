@@ -44,4 +44,4 @@ noinst_HEADERS = commandline.h \
 	safe.h \
 	httpd_thread.h
 
-wdctl_SOURCES = wdctl.c
+wdctl_SOURCES = wdctl.c 

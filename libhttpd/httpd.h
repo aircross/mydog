@@ -67,13 +67,13 @@ extern "C" {
 #define	HTTP_READ_BUF_LEN		4096
 #define	HTTP_ANY_ADDR			NULL
 
-#define	HTTP_GET			1
-#define	HTTP_POST		2
+#define HTTP_GET		1
+#define HTTP_POST		2
 
-#define	HTTP_TRUE		1
-#define HTTP_FALSE		0
+#define HTTP_TRUE		1
+#define HTTP_FALSE	0
 
-#define	HTTP_FILE			1
+#define HTTP_FILE				1
 #define HTTP_C_FUNCT			2
 #define HTTP_EMBER_FUNCT	3
 #define HTTP_STATIC			4
@@ -171,12 +171,12 @@ typedef struct {
 		startTime,
 		lastError;
 	char	fileBasePath[HTTP_MAX_URL],
-		*host;
+		   *host;
 	httpDir	*content;
 	httpAcl	*defaultAcl;
 	http404  *handle404;
-	FILE	*accessLog,
-		*errorLog;
+	FILE	   *accessLog,
+		      *errorLog;
 } httpd;
 
 typedef struct {

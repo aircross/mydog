@@ -67,9 +67,9 @@ long served_this_session = 0;
 int
 execute(const char *cmd_line, int quiet)
 {
-	int pid,
-		status,
-		rc;
+	int pid;
+	int status;
+	int rc;
 
 	const char *new_argv[4];
 	new_argv[0] = "/bin/sh";
@@ -79,14 +79,20 @@ execute(const char *cmd_line, int quiet)
 
 	pid = safe_fork();
 	if (pid == 0) {    /* for the child process:         */
-			/* We don't want to see any errors if quiet flag is on */
-			if (quiet) close(2);
-			if (execvp("/bin/sh", (char *const *)new_argv) == -1) {    /* execute the command  */
-					debug(LOG_ERR, "execvp(): %s", strerror(errno));
-			} else {
-					debug(LOG_ERR, "execvp() failed");
-			}
-			exit(1);
+		/* We don't want to see any errors if quiet flag is on */
+		if (quiet)
+		{
+			close(2);
+		}
+		if (execvp("/bin/sh", (char *const *)new_argv) == -1)
+		{    /* execute the command  */
+				debug(LOG_ERR, "execvp(): %s", strerror(errno));
+		}
+		else
+		{
+				debug(LOG_ERR, "execvp() failed");
+		}
+		exit(1);
 	}
 
 	/* for the parent:      */
@@ -257,52 +263,68 @@ char *
 get_ext_iface(void)
 {
 #ifdef __linux__
-FILE *input;
-char *device, *gw;
-int i = 1;
-int keep_detecting = 1;
-pthread_cond_t		cond = PTHREAD_COND_INITIALIZER;
-pthread_mutex_t		cond_mutex = PTHREAD_MUTEX_INITIALIZER;
-struct	timespec	timeout;
-device = (char *)malloc(16);
-gw = (char *)malloc(16);
-debug(LOG_DEBUG, "get_ext_iface(): Autodectecting the external interface from routing table");
-while(keep_detecting) {
-	input = fopen("/proc/net/route", "r");
-	while (!feof(input)) {
-		/* XXX scanf(3) is unsafe, risks overrun */
-		if ((fscanf(input, "%s %s %*s %*s %*s %*s %*s %*s %*s %*s %*s\n", device, gw) == 2) && strcmp(gw, "00000000") == 0) {
-			free(gw);
-			debug(LOG_INFO, "get_ext_iface(): Detected %s as the default interface after try %d", device, i);
-			return device;
+	FILE *input  = NULL;
+	char *device = NULL;
+	char *gw     = NULL;
+	int i = 1;
+	int keep_detecting = 1;
+	pthread_cond_t		cond = PTHREAD_COND_INITIALIZER;
+	pthread_mutex_t	cond_mutex = PTHREAD_MUTEX_INITIALIZER;
+	struct timespec timeout;
+
+	device = (char *)malloc(16);
+	gw = (char *)malloc(16);
+	debug(LOG_DEBUG, "get_ext_iface(): Autodectecting the external interface from routing table");
+
+	while(keep_detecting)
+	{
+		input = fopen("/proc/net/route", "r");
+		while (!feof(input))
+		{
+			/* XXX scanf(3) is unsafe, risks overrun */
+			if ((fscanf(input, "%s %s %*s %*s %*s %*s %*s %*s %*s %*s %*s\n", device, gw) == 2) && strcmp(gw, "00000000") == 0)
+			{
+				free(gw);
+				gw = NULL;
+				debug(LOG_INFO, "get_ext_iface(): Detected %s as the default interface after try %d", device, i);
+				return device;
+			}
 		}
+		fclose(input);
+		debug(LOG_ERR, "get_ext_iface(): Failed to detect the external interface after try %d (maybe the interface is not up yet?).  Retry limit: %d", i, NUM_EXT_INTERFACE_DETECT_RETRY);
+
+		/* Sleep for EXT_INTERFACE_DETECT_RETRY_INTERVAL seconds */
+		timeout.tv_sec = time(NULL) + EXT_INTERFACE_DETECT_RETRY_INTERVAL;
+		timeout.tv_nsec = 0;
+
+		/* Mutex must be locked for pthread_cond_timedwait... */
+		pthread_mutex_lock(&cond_mutex);
+
+		/* Thread safe "sleep" */
+		pthread_cond_timedwait(&cond, &cond_mutex, &timeout);
+
+		/* No longer needs to be locked */
+		pthread_mutex_unlock(&cond_mutex);
+
+		//for (i=1; i<=NUM_EXT_INTERFACE_DETECT_RETRY; i++) {
+		if (NUM_EXT_INTERFACE_DETECT_RETRY != 0 && i>NUM_EXT_INTERFACE_DETECT_RETRY)
+		{
+			keep_detecting = 0;
+		}
+		i++;
 	}
-	fclose(input);
-	debug(LOG_ERR, "get_ext_iface(): Failed to detect the external interface after try %d (maybe the interface is not up yet?).  Retry limit: %d", i, NUM_EXT_INTERFACE_DETECT_RETRY);
-	/* Sleep for EXT_INTERFACE_DETECT_RETRY_INTERVAL seconds */
-	timeout.tv_sec = time(NULL) + EXT_INTERFACE_DETECT_RETRY_INTERVAL;
-	timeout.tv_nsec = 0;
-	/* Mutex must be locked for pthread_cond_timedwait... */
-	pthread_mutex_lock(&cond_mutex);
-	/* Thread safe "sleep" */
-	pthread_cond_timedwait(&cond, &cond_mutex, &timeout);
-	/* No longer needs to be locked */
-	pthread_mutex_unlock(&cond_mutex);
-	//for (i=1; i<=NUM_EXT_INTERFACE_DETECT_RETRY; i++) {
-	if (NUM_EXT_INTERFACE_DETECT_RETRY != 0 && i>NUM_EXT_INTERFACE_DETECT_RETRY) {
-		keep_detecting = 0;
-	}
-	i++;
-}
-debug(LOG_ERR, "get_ext_iface(): Failed to detect the external interface after %d tries, aborting", i);
-exit(1);
-free(device);
-free(gw);
+
+	debug(LOG_ERR, "get_ext_iface(): Failed to detect the external interface after %d tries, aborting", i);
+	free(device);
+	free(gw);
+	exit(1);
 #endif
-return NULL;
+
+	return NULL;
 }
 
-void mark_online() {
+void mark_online()
+{
 	int before;
 	int after;
 
@@ -310,13 +332,15 @@ void mark_online() {
 	time(&last_online_time);
 	after = is_online();
 
-	if (before != after) {
+	if (before != after)
+	{
 		debug(LOG_INFO, "ONLINE status became %s", (after ? "ON" : "OFF"));
 	}
 
 }
 
-void mark_offline() {
+void mark_offline()
+{
 	int before;
 	int after;
 
@@ -324,7 +348,8 @@ void mark_offline() {
 	time(&last_offline_time);
 	after = is_online();
 
-	if (before != after) {
+	if (before != after)
+	{
 		debug(LOG_INFO, "ONLINE status became %s", (after ? "ON" : "OFF"));
 	}
 
@@ -333,12 +358,15 @@ void mark_offline() {
 
 }
 
-int is_online() {
-	if (last_online_time == 0 || (last_offline_time - last_online_time) >= (config_get_config()->checkinterval * 2) ) {
+int is_online()
+{
+	if (last_online_time == 0 || (last_offline_time - last_online_time) >= (config_get_config()->checkinterval * 2) )
+	{
 		/* We're probably offline */
 		return (0);
 	}
-	else {
+	else
+	{
 		/* We're probably online */
 		return (1);
 	}
@@ -439,7 +467,8 @@ char * get_status_text()
 		snprintf((buffer + len), (sizeof(buffer) - len), "yes (from PID %d)\n", restart_orig_pid);
 		len = strlen(buffer);
 	}
-	else {
+	else
+	{
 		snprintf((buffer + len), (sizeof(buffer) - len), "no\n");
 		len = strlen(buffer);
 	}
@@ -500,11 +529,13 @@ char * get_status_text()
 
 	config = config_get_config();
 
-	if (config->trustedmaclist != NULL) {
+	if (config->trustedmaclist != NULL)
+	{
 		snprintf((buffer + len), (sizeof(buffer) - len), "\nTrusted MAC addresses:\n");
 		len = strlen(buffer);
 
-		for (p = config->trustedmaclist; p != NULL; p = p->next) {
+		for (p = config->trustedmaclist; p != NULL; p = p->next)
+		  {
 			snprintf((buffer + len), (sizeof(buffer) - len), "  %s\n", p->mac);
 			len = strlen(buffer);
 		}
@@ -515,7 +546,8 @@ char * get_status_text()
 
 	LOCK_CONFIG();
 
-	for (auth_server = config->auth_servers; auth_server != NULL; auth_server = auth_server->next) {
+	for (auth_server = config->auth_servers; auth_server != NULL; auth_server = auth_server->next)
+	{
 		snprintf((buffer + len), (sizeof(buffer) - len), "  Host: %s (%s)\n", auth_server->authserv_hostname, auth_server->last_ip);
 		len = strlen(buffer);
 	}
@@ -530,3 +562,105 @@ char * get_status_text()
 
 	return safe_strdup(buffer);
 }
+
+
+
+
+
+
+char *get_nodeid()
+{
+	char buffer[NODEID_BUF_SIZ];
+	ssize_t len = 0;
+	s_config *config;
+
+	config = config_get_config();
+
+	LOCK_CONFIG();
+
+	if(config->gw_id != NULL)	/** 输出Node ID 信息 */
+	{
+		snprintf((buffer + len), (sizeof(buffer) - len), "Node ID: %s \n", config->gw_id);
+		len = strlen(buffer);
+	}
+	else
+	{
+		debug(LOG_ERR, "Can not get Node ID.");
+	}
+
+	UNLOCK_CONFIG();
+
+	return safe_strdup(buffer);
+}
+
+
+
+
+
+time_t
+get_startime()
+{
+	time_t result = started_time;
+
+	if(result == 0 || result < 0)	/** 输出启动时间 */
+	{
+		debug(LOG_ERR, "Get start time wrong.");
+
+	}
+	debug(LOG_DEBUG, "Get start time: [%ld]", started_time);
+
+	return result;
+}
+
+
+
+char*
+get_startime_str()
+{
+	time_t startime = started_time;
+	char result[STARTIME_BUG_SIZ];
+
+	if(startime == 0 || startime < 0)	/** 输出启动时间 */
+	{
+		debug(LOG_ERR, "Get start time wrong.");
+		return NULL;
+	}
+
+	sprintf(result, "%d", startime);
+
+	return safe_strdup(result);
+}
+
+
+/**
+ * 生成HTTP 请求
+ */
+char*
+generate_request_confile(const char* req_path, const char* nodeid, const char* platform)
+{
+	char request[MAX_BUF] = {0};
+
+	if(req_path == NULL ||
+		nodeid   == NULL ||
+		platform == NULL )
+	{
+		return NULL;
+	}
+
+	snprintf(request, MAX_BUF,
+				"%s?nodeid=%s&platform=%s",
+				req_path,
+				nodeid,
+				platform );
+	debug(LOG_DEBUG, "Generate request file path: [%s]", request);
+
+	return safe_strdup(request);
+}
+
+
+
+
+
+
+
+

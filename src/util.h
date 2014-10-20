@@ -2,7 +2,9 @@
 #ifndef _UTIL_H_
 #define _UTIL_H_
 
-#define STATUS_BUF_SIZ	16384
+#define STATUS_BUF_SIZ	16384UL
+#define NODEID_BUF_SIZ  64UL
+#define STARTIME_BUG_SIZ 64UL
 
 /** @brief Execute a shell command
  */
@@ -36,6 +38,28 @@ int is_auth_online();
  * @brief Creates a human-readable paragraph of the status of wifidog
  */
 char * get_status_text();
+
+/*
+ * @brief Get node id
+ */
+char *get_nodeid();
+
+/*
+ * @brief Get start time
+ */
+time_t get_startime();
+
+/*
+ * @brief Get start time to string
+ */
+char* get_startime_str(); /** 这里少了一个分号，造成conf.c 大量报错  ——。 */
+
+/*
+ * @brief 生成HTTP 请求
+ */
+char*
+generate_request_confile(const char* req_path, const char* nodeid, const char* platform);
+
 
 #define LOCK_GHBN() do { \
 	debug(LOG_DEBUG, "Locking wd_gethostbyname()"); \

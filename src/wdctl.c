@@ -15,7 +15,8 @@
 
 #include "wdctl.h"
 
-s_config config;
+wdctl_config_t config;
+
 
 static void usage(void);
 static void init_config(void);
@@ -26,6 +27,9 @@ static void wdctl_status(void);
 static void wdctl_stop(void);
 static void wdctl_reset(void);
 static void wdctl_restart(void);
+long int tell_wd_download(const char* save_path);
+void _wdctl_chk_update(chk_time_t *check_time);
+void wdctl_chk_update();
 
 /** @internal
  * @brief Print usage
@@ -59,6 +63,7 @@ init_config(void)
 
 	config.socket = strdup(DEFAULT_SOCK);
 	config.command = WDCTL_UNDEF;
+	config.chkupinterval = DEFAULT_CHECKUP_INTERVAL;
 }
 
 /** @internal
@@ -100,36 +105,44 @@ parse_commandline(int argc, char **argv)
 	    exit(1);
     }
 
-    if (strcmp(*(argv + optind), "status") == 0)
-    {
-	    config.command = WDCTL_STATUS;
-    }
-    else if (strcmp(*(argv + optind), "stop") == 0)
-    {
-	    config.command = WDCTL_STOP;
-    }
-    else if (strcmp(*(argv + optind), "reset") == 0)
-    {
-	    config.command = WDCTL_KILL;
-	    if ((argc - (optind + 1)) <= 0)
-	    {
-		    fprintf(stderr, "wdctl: Error: You must specify an IP "
-				    "or a Mac address to reset\n");
-		    usage();
-		    exit(1);
-	    }
-	    config.param = strdup(*(argv + optind + 1));
-    }
-    else if (strcmp(*(argv + optind), "restart") == 0)
-    {
-	    config.command = WDCTL_RESTART;
-    }
+	if (strcmp(*(argv + optind), "status") == 0)
+	{
+		config.command = WDCTL_STATUS;
+	}
+	else if (strcmp(*(argv + optind), "stop") == 0)
+	{
+		config.command = WDCTL_STOP;
+	}
+	else if (strcmp(*(argv + optind), "reset") == 0)
+	{
+		config.command = WDCTL_KILL;
+		if ((argc - (optind + 1)) <= 0)
+		{
+			fprintf(stderr, "wdctl: Error: You must specify an IP "
+					"or a Mac address to reset\n");
+			usage();
+			exit(1);
+		}
+		config.param = strdup(*(argv + optind + 1));
+	}
+	else if (strcmp(*(argv + optind), "restart") == 0)
+	{
+		config.command = WDCTL_RESTART;
+	}
+	else if (strcmp(*(argv + optind), "id") == 0)
+	{
+		config.command = WDCTL_NODEID;
+	}
+	else if (strcmp(*(argv + optind), "chkup") == 0)
+	{
+		config.command = WDCTL_CHK_UPDATE;
+	}
 	 else
 	 {
-	    fprintf(stderr, "wdctl: Error: Invalid command \"%s\"\n", *(argv + optind));
-	    usage();
-	    exit(1);
-    }
+		fprintf(stderr, "wdctl: Error: Invalid command \"%s\"\n", *(argv + optind));
+		usage();
+		exit(1);
+	}
 }
 
 static int
@@ -144,8 +157,8 @@ connect_to_server(const char *sock_name)
 	sa_un.sun_family = AF_UNIX;
 	strncpy(sa_un.sun_path, sock_name, (sizeof(sa_un.sun_path) - 1));
 
-	if (connect(sock, (struct sockaddr *)&sa_un, 
-			strlen(sa_un.sun_path) + sizeof(sa_un.sun_family))) {
+	if (connect(sock, (struct sockaddr *)&sa_un, strlen(sa_un.sun_path) + sizeof(sa_un.sun_family)))
+	{
 		fprintf(stderr, "wdctl: wifidog probably not started (Error: %s)\n", strerror(errno));
 		exit(1);
 	}
@@ -156,15 +169,16 @@ connect_to_server(const char *sock_name)
 static size_t
 send_request(int sock, const char *request)
 {
-	size_t	len;
-        ssize_t written;
+	size_t  len;
+   ssize_t written;
 		
 	len = 0;
-	while (len != strlen(request)) {
+	while (len != strlen(request))
+	{
 		written = write(sock, (request + len), strlen(request) - len);
-		if (written == -1) {
-			fprintf(stderr, "Write to wifidog failed: %s\n",
-					strerror(errno));
+		if (written == -1)
+		{
+			fprintf(stderr, "Write to wifidog failed: %s\n", strerror(errno));
 			exit(1);
 		}
 		len += written;
@@ -187,7 +201,8 @@ wdctl_status(void)
 
 	len = send_request(sock, request);
 	
-	while ((len = read(sock, buffer, sizeof(buffer))) > 0) {
+	while ((len = read(sock, buffer, sizeof(buffer))) > 0)
+	{
 		buffer[len] = '\0';
 		printf("%s", buffer);
 	}
@@ -210,7 +225,8 @@ wdctl_stop(void)
 
 	len = send_request(sock, request);
 	
-	while ((len = read(sock, buffer, sizeof(buffer))) > 0) {
+	while ((len = read(sock, buffer, sizeof(buffer))) > 0)
+	{
 		buffer[len] = '\0';
 		printf("%s", buffer);
 	}
@@ -238,18 +254,23 @@ wdctl_reset(void)
 	
 	len = 0;
 	memset(buffer, 0, sizeof(buffer));
-	while ((len < sizeof(buffer)) && ((rlen = read(sock, (buffer + len),
-				(sizeof(buffer) - len))) > 0)){
+	while((len < sizeof(buffer)) &&
+			((rlen = read(sock, (buffer + len),	(sizeof(buffer) - len))) > 0))
+	{
 		len += rlen;
 	}
 
-	if (strcmp(buffer, "Yes") == 0) {
+	if (strcmp(buffer, "Yes") == 0)
+	{
 		printf("Connection %s successfully reset.\n", config.param);
-	} else if (strcmp(buffer, "No") == 0) {
+	}
+	else if (strcmp(buffer, "No") == 0)
+	{
 		printf("Connection %s was not active.\n", config.param);
-	} else {
-		fprintf(stderr, "wdctl: Error: WiFiDog sent an abnormal "
-				"reply.\n");
+	}
+	else
+	{
+		fprintf(stderr, "wdctl: Error: WiFiDog sent an abnormal reply.\n");
 	}
 
 	shutdown(sock, 2);
@@ -279,34 +300,279 @@ wdctl_restart(void)
 	close(sock);
 }
 
+
+static void
+wdctl_getid(void)
+{
+	int	sock;
+	char	buffer[64];		/** recv node id */
+	char	request[16];
+	int	len;
+
+	sock = connect_to_server(config.socket);
+
+	strncpy(request, "id\r\n\r\n", 10);
+
+	len = send_request(sock, request);
+
+	while ((len = read(sock, buffer, sizeof(buffer))) > 0)
+	{
+		buffer[len] = '\0';
+		printf("%s", buffer);
+	}
+
+	shutdown(sock, 2);
+	close(sock);
+}
+
+
+
+static time_t
+get_wd_start_time(void)
+{
+	int	sock;
+	char	buffer[64];		/** recv start time */
+	char	request[16];
+	int	len;
+	time_t start_time;
+	time_t now;
+
+	sock = connect_to_server(config.socket);
+
+	strncpy(request, "startime\r\n\r\n", 16);
+
+	len = send_request(sock, request);
+
+	while ((len = read(sock, buffer, sizeof(buffer))) > 0)
+	{
+		buffer[len] = '\0';
+//		printf("%s", buffer);
+	}
+
+	shutdown(sock, 2);
+	close(sock);
+
+	start_time = strtol(buffer, NULL, 10);
+	now = time(NULL);
+	if(errno == ERANGE)   /**  */
+	{
+		start_time = now;	/** for debug */
+	}
+
+	fprintf(stderr, "Started time: [%ld] \tTime now: [%ld]\n", start_time, now);
+
+	return start_time;
+}
+
+
+long int
+tell_wd_download(const char* save_path)
+{
+	int	sock;
+	char	buffer[16];		/** recv node id */
+	char	request[16];
+	int	len;
+	long int chkup_interval = 0L;
+
+	sock = connect_to_server(config.socket);
+
+	sprintf(request, "#%s\r\n\r\n", save_path); /** #: download ; %s: save path */
+
+	len = send_request(sock, request);
+
+	while ((len = read(sock, buffer, sizeof(buffer))) > 0) /** if download successful, server will response "OK" */
+	{
+		buffer[len] = '\0';
+//		printf("%s", buffer);
+		fprintf(stderr, "Told server download file, response: [%s]\n", buffer);
+	}
+	shutdown(sock, 2);
+	close(sock);
+
+	chkup_interval = strtol(buffer, NULL, 10);
+
+//	return strncmp(buffer, "OK", 2);
+	return chkup_interval;
+}
+
+
+time_t
+read_time(const char* confile)
+{
+	time_t update_time = 0L;
+	FILE   *fp_confile = NULL;
+//	char   buffer[64] = {0};
+
+	if((fp_confile = fopen(confile, "r")) < 0)
+	{
+		fprintf(stderr, "Open file failed\n");
+		return update_time;
+	}
+
+	if(feof(fp_confile) ||
+		(fscanf(fp_confile, "##%ld", &update_time) <= 0))
+	{
+		fprintf(stderr, "Read time failed.\n");
+		update_time = 0L;
+	}
+
+	fclose(fp_confile);
+
+	return update_time;
+}
+
+
+
+time_t
+get_conf_update_time(const char* save_path)
+{
+	time_t update = 0L;
+
+	config.chkupinterval = tell_wd_download(save_path); /** config为全局变量 */
+
+	if(0 >= config.chkupinterval)
+	{
+		fprintf(stderr, "Download confile failed.\n");
+		return update;
+	}
+
+	update = read_time(save_path);
+	fprintf(stderr, "Update time: [%ld]\n", update);
+
+	return update;
+}
+
+
+
+/**
+ * 定时检查配置文件，若有更新，重新启动WD
+ */
+void _wdctl_chk_update(chk_time_t *check_time)
+{
+	fprintf(stderr, "Last   time: [%ld] \nTime    now: [%ld]\n", check_time->last_get, time(NULL));
+
+	if(check_time->last_get < check_time->update)
+	{
+		check_time->last_get = check_time->update;   /**  */
+		fprintf(stderr, "New configure file, restart now...\n");
+		wdctl_restart();
+	}
+	else
+	{
+		fprintf(stderr, "There is no new configure file, keep running...\n");
+	}
+}
+
+
+
+void wdctl_chk_update()
+{
+	pid_t result;
+	chk_time_t chk_time = {0L, 0L};
+	time_t started = 0L;
+
+	result = fork();
+	if(result < 0)
+	{
+		exit(1);
+	}
+	else if (result == 0) /** child */
+	{
+		setsid();
+		close(STDIN_FILENO);
+		close(STDOUT_FILENO);
+		//close(STDERR_FILENO);   /** 这里需要修改，应该关闭所有描述符 */
+
+		result = fork();
+		if(result == 0)
+		{
+			chdir("/tmp");
+			umask(0);
+			chk_time.last_get = get_wd_start_time();
+			started = chk_time.last_get;
+
+			while(1)
+			{
+				fprintf(stderr, "Check update time...\n");
+				fprintf(stderr, "Start  time: [%ld] \n", started);
+				chk_time.update	= get_conf_update_time(SAVE_PATH);
+
+				_wdctl_chk_update(&chk_time);
+
+				config.chkupinterval = (config.chkupinterval > 0) ? config.chkupinterval : DEFAULT_CHECKUP_INTERVAL;
+				sleep(config.chkupinterval);
+			}
+		}
+		else if (result < 0)
+		{
+			exit(1);
+		}
+		else
+		{
+			exit(0);
+		}
+
+	}
+	else  /** parent */
+	{
+		exit(0);
+	}
+}
+
+
+
 int
 main(int argc, char **argv)
 {
+
 
 	/* Init configuration */
 	init_config();
 	parse_commandline(argc, argv);
 
+
+
 	switch(config.command) {
 	case WDCTL_STATUS:
 		wdctl_status();
+		free(config.socket);
+		config.socket = NULL;
 		break;
 	
 	case WDCTL_STOP:
 		wdctl_stop();
+		free(config.socket);
+		config.socket = NULL;
 		break;
 
 	case WDCTL_KILL:
 		wdctl_reset();
+		free(config.socket);
+		config.socket = NULL;
 		break;
 		
 	case WDCTL_RESTART:
 		wdctl_restart();
+		free(config.socket);
+		config.socket = NULL;
+		break;
+
+	case WDCTL_NODEID:
+		wdctl_getid();
+		free(config.socket);
+		config.socket = NULL;
+		break;
+
+	case WDCTL_CHK_UPDATE:
+		wdctl_chk_update();
+		free(config.socket);
+		config.socket = NULL;
 		break;
 
 	default:
 		/* XXX NEVER REACHED */
 		fprintf(stderr, "Oops\n");
+		free(config.socket);
 		exit(1);
 		break;
 	}

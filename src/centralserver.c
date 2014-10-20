@@ -37,22 +37,23 @@ extern pthread_mutex_t	config_mutex;
 @param outgoing Current counter of the client's total outgoing traffic, in bytes 
 */
 t_authcode
-auth_server_request(	t_authresponse *authresponse,
-							const char *request_type,
-							const char *ip,
-							const char *mac,
-							const char *token,
-							unsigned long long int incoming,
-							unsigned long long int outgoing)
+auth_server_request(  t_authresponse *authresponse,
+			    const char *request_type,
+			    const char *ip,
+			    const char *mac,
+			    const char *token,
+			    unsigned long long int incoming,
+			    unsigned long long int outgoing)
 {
-	int sockfd;
+	int 		sockfd;
 	ssize_t	numbytes;
-	size_t totalbytes;
-	char buf[MAX_BUF];
-	char *tmp;
-        char *safe_token;
-	int done, nfds;
-	fd_set			readfds;
+	size_t 	totalbytes;
+	char 		buf[MAX_BUF];
+	char 		*tmp;
+   char 		*safe_token;
+	int 		done;
+	int 		nfds;
+	fd_set	readfds;
 	struct timeval		timeout;
 	t_auth_serv	*auth_server = NULL;
 	auth_server = get_auth_server();
@@ -92,9 +93,13 @@ auth_server_request(	t_authresponse *authresponse,
 	);
 
 	free(safe_token);
+	safe_token = NULL;
 
 	debug(LOG_DEBUG, "Sending HTTP request to auth server: [%s]\n", buf);
-	send(sockfd, buf, strlen(buf), 0);
+	if(0 > send(sockfd, buf, strlen(buf), 0))
+	{
+	    debug(LOG_ERR, "Send request to auth server failed.");
+	}
 
 	debug(LOG_DEBUG, "Reading response");
 	numbytes = totalbytes = 0;
@@ -183,11 +188,13 @@ int connect_auth_server()
 	sockfd = _connect_auth_server(0);
 	UNLOCK_CONFIG();
 
-	if (sockfd == -1) {
+	if (sockfd == -1)
+	{
 		debug(LOG_ERR, "Failed to connect to any of the auth servers");
 		mark_auth_offline();
 	}
-	else {
+	else
+	{
 		debug(LOG_DEBUG, "Connected to auth server");
 		mark_auth_online();
 	}
@@ -198,16 +205,16 @@ int connect_auth_server()
  * DO NOT CALL DIRECTLY
  @param level recursion level indicator must be 0 when not called by _connect_auth_server()
  */
-int _connect_auth_server(int level) {
+int _connect_auth_server(int level)
+{
 	int 	num_servers 		= 0;
 	char *hostname 			= NULL;
-	char *popular_servers[] = {
-			POPULAR_SERVERS_0,
-			POPULAR_SERVERS_1,
-			NULL };
+	char *popular_servers[] = { POPULAR_SERVERS_0,
+										 POPULAR_SERVERS_1,
+										 NULL };
 	s_config 		*config 			= config_get_config();
 	t_auth_serv 	*auth_server 	= NULL;
-	struct in_addr *h_addr;
+	struct in_addr *host_addr;
 	char 				**popularserver;
 	char 				*ip;
 	int 				sockfd;
@@ -219,12 +226,14 @@ int _connect_auth_server(int level) {
 	/*
 	 * Let's calculate the number of servers we have
 	 */
-	for (auth_server = config->auth_servers; auth_server; auth_server = auth_server->next) {
+	for (auth_server = config->auth_servers; auth_server; auth_server = auth_server->next)
+	{
 		num_servers++;
 	}
 	debug(LOG_DEBUG, "Level %d: Calculated %d auth servers in list", level, num_servers);
 
-	if (level > num_servers) {
+	if (level > num_servers)
+	{
 		/*
 		 * We've called ourselves too many times
 		 * This means we've cycled through all the servers in the server list
@@ -240,8 +249,8 @@ int _connect_auth_server(int level) {
 	hostname 	= auth_server->authserv_hostname;
 	debug(LOG_DEBUG, "Level %d: Resolving auth server [%s]", level, hostname);
 
-	h_addr		= wd_gethostbyname(hostname);
-	if (NULL == h_addr)
+	host_addr = wd_gethostbyname(hostname);
+	if (NULL == host_addr)
 	{
 		/*
 		 * DNS resolving it failed
@@ -253,10 +262,10 @@ int _connect_auth_server(int level) {
 		for (popularserver = popular_servers; *popularserver; popularserver++)
 		{
 			debug(LOG_DEBUG, "Level %d: Resolving popular server [%s]", level, *popularserver);
-			h_addr = wd_gethostbyname(*popularserver);
-			if (h_addr)
+			host_addr = wd_gethostbyname(*popularserver);
+			if (host_addr)
 			{
-				debug(LOG_DEBUG, "Level %d: Resolving popular server [%s] succeeded = [%s]", level, *popularserver, inet_ntoa(*h_addr));
+				debug(LOG_DEBUG, "Level %d: Resolving popular server [%s] succeeded = [%s]", level, *popularserver, inet_ntoa(*host_addr));
 				break;
 			}
 			else
@@ -270,9 +279,10 @@ int _connect_auth_server(int level) {
 		 * words, if one of the popular servers resolved, we'll assume the DNS
 		 * works, otherwise we'll deal with net connection or DNS failure.
 		 */
-		if (h_addr)
+		if (host_addr)
 		{
-			free (h_addr);
+			free (host_addr);
+			host_addr = NULL;
 			/*
 			 * Yes
 			 *
@@ -296,8 +306,7 @@ int _connect_auth_server(int level) {
 			 * and nothing we can do will make it work
 			 */
 			mark_offline();
-			debug(LOG_DEBUG, "Level %d: Failed to resolve auth server and all popular servers. "
-					"The internet connection is probably down", level);
+			debug(LOG_DEBUG, "Level %d: Failed to resolve auth server and all popular servers. " "The internet connection is probably down", level);
 			return(-1);
 		}
 	}/** end if(!h_addr) */
@@ -306,7 +315,7 @@ int _connect_auth_server(int level) {
 		/*
 		 * DNS resolving was successful
 		 */
-		ip = safe_strdup(inet_ntoa(*h_addr));
+		ip = safe_strdup(inet_ntoa(*host_addr));
 		debug(LOG_DEBUG, "Level %d: Resolving auth server [%s] succeeded = [%s]", level, hostname, ip);
 
 		if ((NULL == auth_server->last_ip) || (strcmp(auth_server->last_ip, ip) != 0))
@@ -342,10 +351,10 @@ int _connect_auth_server(int level) {
 		debug(LOG_DEBUG, "Level %d: Connecting to auth server %s:%d", level, hostname, auth_server->authserv_http_port);
 		their_addr.sin_family = AF_INET;
 		their_addr.sin_port = htons(auth_server->authserv_http_port);
-		their_addr.sin_addr = *h_addr;
+		their_addr.sin_addr = *host_addr;
 		memset(&(their_addr.sin_zero), '\0', sizeof(their_addr.sin_zero));
-		free (h_addr);
-		h_addr = NULL;
+		free (host_addr);
+		host_addr = NULL;
 
 		if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
 		{

@@ -39,6 +39,9 @@ static void wdctl_status(int);
 static void wdctl_stop(int);
 static void wdctl_reset(int, const char *);
 static void wdctl_restart(int);
+static void wdctl_getid(int fd);
+static void wdctl_get_startime(int fd);
+static void wdctl_download(int fd, const char *chkfile_save_path);
 
 /** Launches a thread that monitors the control socket for request
 @param arg Must contain a pointer to a string containing the Unix domain socket to open
@@ -176,6 +179,19 @@ thread_wdctl_handler(void *arg)
 	{
 		wdctl_restart(fd);
 	}
+	else if (strncmp(request, "id", 2) == 0)
+	{
+		wdctl_getid(fd);  /** Get node id */
+	}
+	else if (strncmp(request, "startime", 8) == 0)
+	{
+		wdctl_get_startime(fd);  /** 获取启动时间 */
+	}
+	else if (strncmp(request, "#", 1) == 0) /** wdctl request to download confile */
+	{
+		debug(LOG_DEBUG, "Receive [#], means download file, downloading... ");
+		wdctl_download(fd, request+1);
+	}
 
 	if (!done)
 	{
@@ -194,6 +210,45 @@ thread_wdctl_handler(void *arg)
 	return NULL;
 }
 
+
+static void
+wdctl_download(int fd, const char *chkfile_save_path)
+{
+	s_config * wdconf = NULL;
+	char *req_confile = NULL;
+	char *nodeid      = NULL;
+	char chkup_interval[6] = {0};
+
+	LOCK_CONFIG();
+	wdconf = config_get_config();
+	req_confile = generate_request_confile(REQ_PATH, wdconf->gw_id, get_platform());
+	UNLOCK_CONFIG();
+
+	if( (NULL != req_confile) &&
+		 (0 == get_config_from_server_2(wdconf->auth_servers, req_confile, chkfile_save_path)) )
+	{
+		debug(LOG_DEBUG, "Request file path: %s%s", wdconf->auth_servers->authserv_hostname, req_confile);
+		debug(LOG_DEBUG, "Download file for checking update time finished.");
+		debug(LOG_DEBUG, "Tell wdctl download finished.");
+
+		sprintf(chkup_interval, "%d", wdconf->chkupinterval);
+
+//		if(write(fd, "OK", 2) == -1)	/** 将恢复内容“OK”替换成wctl检查更新的时间间隔 */
+		if(write(fd, chkup_interval, 6) == -1)
+		{
+			debug(LOG_CRIT, "Write error: %s", strerror(errno));
+		}
+	}
+	else
+	{
+		debug(LOG_DEBUG, "There is a error about download file.");
+	}
+
+	free(req_confile);
+	req_confile = NULL;
+
+}
+
 static void
 wdctl_status(int fd)
 {
@@ -209,9 +264,46 @@ wdctl_status(int fd)
 	free(status);
 }
 
+
+static void
+wdctl_getid(int fd)
+{
+	char * status = NULL;
+	int len = 0;
+
+	status = get_nodeid();
+	len = strlen(status);
+
+	if(write(fd, status, len) == -1)
+	{
+		debug(LOG_CRIT, "Write error: %s", strerror(errno));
+	}
+
+	free(status);
+}
+
+
+static void
+wdctl_get_startime(int fd)
+{
+	char *startime = NULL;
+	int len = 0;
+
+	startime = get_startime_str();
+	len = strlen(startime);
+
+	if(write(fd, startime, len) == -1)
+	{
+		debug(LOG_CRIT, "Write error: %s", strerror(errno));
+	}
+
+	free(startime);
+}
+
+
 /** A bit of an hack, self kills.... */
 static void
-wdctl_stop(int fd)
+wdctl_stop(int fd)       /** fd 没有使用！？ */
 {
 	pid_t	pid;
 
@@ -265,12 +357,14 @@ wdctl_restart(int afd)
 	debug(LOG_DEBUG, "Binding socket (%s) (%d)", sa_un.sun_path, strlen(sock_name));
 	
 	/* Which to use, AF_UNIX, PF_UNIX, AF_LOCAL, PF_LOCAL? */
-	if (bind(sock, (struct sockaddr *)&sa_un, strlen(sock_name) + sizeof(sa_un.sun_family))) {
+	if (bind(sock, (struct sockaddr *)&sa_un, strlen(sock_name) + sizeof(sa_un.sun_family)))
+	{
 		debug(LOG_ERR, "Could not bind internal socket: %s", strerror(errno));
 		return;
 	}
 
-	if (listen(sock, 5)) {
+	if (listen(sock, 5))
+	{
 		debug(LOG_ERR, "Could not listen on internal socket: %s", strerror(errno));
 		return;
 	}
@@ -280,13 +374,15 @@ wdctl_restart(int afd)
 	 */
 	debug(LOG_DEBUG, "Forking in preparation for exec()...");
 	pid = safe_fork();
-	if (pid > 0) {
+	if (pid > 0)
+	{
 		/* Parent */
 
 		/* Wait for the child to connect to our socket :*/
 		debug(LOG_DEBUG, "Waiting for child to connect on internal socket");
 		len = sizeof(sa_un);
-		if ((fd = accept(sock, (struct sockaddr *)&sa_un, &len)) == -1){
+		if ((fd = accept(sock, (struct sockaddr *)&sa_un, &len)) == -1)
+		{
 			debug(LOG_ERR, "Accept failed on internal socket: %s", strerror(errno));
 			close(sock);
 			return;
@@ -299,23 +395,29 @@ wdctl_restart(int afd)
 		/* The child is connected. Send them over the socket the existing clients */
 		LOCK_CLIENT_LIST();
 		client = client_get_first_client();
-		while (client) {
+		while (client)
+		{
 			/* Send this client */
 			safe_asprintf(&tempstring, "CLIENT|ip=%s|mac=%s|token=%s|fw_connection_state=%u|fd=%d|counters_incoming=%llu|counters_outgoing=%llu|counters_last_updated=%lu\n", client->ip, client->mac, client->token, client->fw_connection_state, client->fd, client->counters.incoming, client->counters.outgoing, client->counters.last_updated);
 			debug(LOG_DEBUG, "Sending to child client data: %s", tempstring);
 			len = 0;
-			while (len != strlen(tempstring)) {
+			while (len != strlen(tempstring))
+			{
 				written = write(fd, (tempstring + len), strlen(tempstring) - len);
-				if (written == -1) {
+				if (written == -1)
+				{
 					debug(LOG_ERR, "Failed to write client data to child: %s", strerror(errno));
 					free(tempstring);
+					tempstring = NULL;
 					break;
 				}
-				else {
+				else
+				{
 					len += written;
 				}
 			}
 			free(tempstring);
+			tempstring = NULL;
 			client = client->next;
 		}
 		UNLOCK_CLIENT_LIST();
@@ -330,7 +432,8 @@ wdctl_restart(int afd)
 		/* Our job in life is done. Commit suicide! */
 		wdctl_stop(afd);
 	}
-	else {
+	else
+	{
 		/* Child */
 		close(wdctl_socket_server);
 		close(icmp_fd);
